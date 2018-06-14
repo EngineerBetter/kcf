@@ -30,6 +30,8 @@ K8S_MACHINE_TYPE := n1-highcpu-2
 K8S_NODES := 1
 K8S_PROXY_PORT := 8001
 
+GIT_SUBMODULES_JOBS := 12
+
 ### TARGETS ###
 #
 #
@@ -48,7 +50,12 @@ kubectl: /usr/local/bin/kubectl
 helm: /usr/local/bin/helm
 
 scf:
-	@git clone https://github.com/SUSE/scf.git
+	@git clone https://github.com/SUSE/scf.git --recurse-submodules --jobs $(GIT_SUBMODULES_JOBS)
+update_scf: scf
+	@cd scf && \
+	git pull && \
+	git submodule update --recursive --force --jobs $(GIT_SUBMODULES_JOBS) && \
+	git submodule foreach --recursive 'git checkout . && git clean -fdx'
 
 help:
 	@grep -E '^[0-9a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN { FS = "[:#]" } ; { printf "\033[36m%-20s\033[0m %s\n", $$1, $$4 }' | sort
