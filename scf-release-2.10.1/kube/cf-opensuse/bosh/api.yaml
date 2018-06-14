@@ -1,0 +1,299 @@
+---
+# The api role contains the following jobs:
+#
+# - global-properties: Dummy BOSH job used to host global parameters that are
+#   required to configure SCF
+#
+# - authorize-internal-ca: Install both internal and UAA CA certificates
+#
+# - patch-properties: Dummy BOSH job used to host parameters that are used in
+#   SCF patches for upstream bugs
+#
+# - cloud_controller_ng: The Cloud Controller provides primary Cloud Foundry API
+#   that is by the CF CLI. The Cloud Controller uses a database to keep tables
+#   for organizations, spaces, apps, services, service instances, user roles,
+#   and more. Typically multiple instances of Cloud Controller are load
+#   balanced.
+#
+# - route_registrar: Used for registering routes
+#
+# Also: metron_agent, statsd_injector, go-buildpack, binary-buildpack,
+# nodejs-buildpack, ruby-buildpack, php-buildpack, python-buildpack,
+# staticfile-buildpack, java-buildpack, dotnet-core-buildpack
+apiVersion: "apps/v1beta1"
+kind: "StatefulSet"
+metadata:
+  name: "api"
+  labels:
+    skiff-role-name: "api"
+spec:
+  replicas: 1
+  serviceName: "api-set"
+  template:
+    metadata:
+      annotations: {}
+      labels:
+        skiff-role-name: "api"
+      name: "api"
+    spec:
+      containers:
+      - env:
+        - name: "ALLOWED_CORS_DOMAINS"
+          value: "[]"
+        - name: "ALLOW_APP_SSH_ACCESS"
+          value: "true"
+        - name: "APP_SSH_KEY_FINGERPRINT"
+          valueFrom:
+            secretKeyRef:
+              key: "app-ssh-key-fingerprint"
+              name: "secrets"
+        - name: "APP_TOKEN_UPLOAD_GRACE_PERIOD"
+          value: "1200"
+        - name: "BLOBSTORE_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "blobstore-password"
+              name: "secrets"
+        - name: "BULK_API_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "bulk-api-password"
+              name: "secrets"
+        - name: "CC_SERVER_CRT"
+          valueFrom:
+            secretKeyRef:
+              key: "cc-server-crt"
+              name: "secrets"
+        - name: "CC_SERVER_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "cc-server-key"
+              name: "secrets"
+        - name: "CDN_URI"
+          value: ""
+        - name: "CLUSTER_BUILD"
+          value: "2.0.2"
+        - name: "CLUSTER_DESCRIPTION"
+          value: "SUSE Cloud Foundry"
+        - name: "CLUSTER_NAME"
+          value: "SCF"
+        - name: "CLUSTER_VERSION"
+          value: "2"
+        - name: "DB_ENCRYPTION_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "db-encryption-key"
+              name: "secrets"
+        - name: "DEFAULT_APP_DISK_IN_MB"
+          value: "1024"
+        - name: "DEFAULT_APP_MEMORY"
+          value: "1024"
+        - name: "DEFAULT_APP_SSH_ACCESS"
+          value: "true"
+        - name: "DEFAULT_STACK"
+          value: "opensuse42"
+        - name: "DISABLE_CUSTOM_BUILDPACKS"
+          value: "false"
+        - name: "DOMAIN"
+          value: "cf-dev.io"
+        - name: "DROPLET_MAX_STAGED_STORED"
+          value: "5"
+        - name: "INTERNAL_API_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "internal-api-password"
+              name: "secrets"
+        - name: "INTERNAL_CA_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "internal-ca-cert"
+              name: "secrets"
+        - name: "INTERNAL_CA_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "internal-ca-key"
+              name: "secrets"
+        - name: "KUBERNETES_NAMESPACE"
+          valueFrom:
+            fieldRef:
+              fieldPath: "metadata.namespace"
+        - name: "KUBE_AZ"
+          value: "z1"
+        - name: "KUBE_SIZING_NATS_COUNT"
+          value: "1"
+        - name: "LOG_LEVEL"
+          value: "info"
+        - name: "MAX_APP_DISK_IN_MB"
+          value: "2048"
+        - name: "MAX_HEALTH_CHECK_TIMEOUT"
+          value: "180"
+        - name: "METRON_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "metron-cert"
+              name: "secrets"
+        - name: "METRON_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "metron-key"
+              name: "secrets"
+        - name: "MONIT_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "monit-password"
+              name: "secrets"
+        - name: "MYSQL_CCDB_ROLE_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "mysql-ccdb-role-password"
+              name: "secrets"
+        - name: "NATS_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "nats-password"
+              name: "secrets"
+        - name: "NGINX_MAX_REQUEST_BODY_SIZE"
+          value: "2048"
+        - name: "ROUTER_SERVICES_SECRET"
+          valueFrom:
+            secretKeyRef:
+              key: "router-services-secret"
+              name: "secrets"
+        - name: "SCF_LOG_PROTOCOL"
+          value: "tcp"
+        - name: "STAGER_INSECURE_DOCKER_REGISTRIES"
+          value: ""
+        - name: "STAGING_TIMEOUT"
+          value: "900"
+        - name: "STAGING_UPLOAD_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "staging-upload-password"
+              name: "secrets"
+        - name: "SUPPORT_ADDRESS"
+          value: "support@example.com"
+        - name: "SUSE_STACK"
+          value: "opensuse42"
+        - name: "SUSE_STACK_DESCRIPTION"
+          value: "openSUSE-based filesystem"
+        - name: "UAA_CA_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "uaa-ca-cert"
+              name: "secrets"
+        - name: "UAA_CLIENTS_CC_ROUTING_SECRET"
+          valueFrom:
+            secretKeyRef:
+              key: "uaa-clients-cc-routing-secret"
+              name: "secrets"
+        - name: "UAA_CLIENTS_CC_SERVICE_DASHBOARDS_CLIENT_SECRET"
+          valueFrom:
+            secretKeyRef:
+              key: "uaa-clients-cc-service-dashboards-client-secret"
+              name: "secrets"
+        - name: "UAA_CLIENTS_CC_SERVICE_KEY_CLIENT_SECRET"
+          valueFrom:
+            secretKeyRef:
+              key: "uaa-clients-cc-service-key-client-secret"
+              name: "secrets"
+        - name: "UAA_CLIENTS_CLOUD_CONTROLLER_USERNAME_LOOKUP_SECRET"
+          valueFrom:
+            secretKeyRef:
+              key: "uaa-clients-cloud-controller-username-lookup-secret"
+              name: "secrets"
+        - name: "UAA_HOST"
+          value: "uaa.cf-dev.io"
+        - name: "UAA_PORT"
+          value: "2793"
+        - name: "USE_DIEGO_PRIVILEGED_CONTAINERS"
+          value: "false"
+        - name: "USE_STAGER_PRIVILEGED_CONTAINERS"
+          value: "false"
+        image: "splatform/scf-api:535f02a419f6e6b038e43913202941424e24a2dc"
+        lifecycle:
+          preStop:
+            exec:
+              command:
+              - "/opt/fissile/pre-stop.sh"
+        livenessProbe: ~
+        name: "api"
+        ports:
+        - containerPort: 9022
+          name: "api"
+          protocol: "TCP"
+        - containerPort: 9023
+          name: "api-tls"
+          protocol: "TCP"
+        - containerPort: 8125
+          name: "statsd"
+          protocol: "TCP"
+        readinessProbe:
+          failureThreshold: 0
+          httpGet:
+            path: "/v2/info"
+            port: 9022
+            scheme: "HTTP"
+          initialDelaySeconds: 0
+          periodSeconds: 0
+          successThreshold: 0
+          timeoutSeconds: 0
+        resources:
+          requests:
+            memory: "2421Mi"
+            cpu: "4000m"
+          limits: {}
+        securityContext: ~
+        volumeMounts: ~
+      dnsPolicy: "ClusterFirst"
+      imagePullSecrets:
+      - name: "registry-credentials"
+      restartPolicy: "Always"
+      terminationGracePeriodSeconds: 600
+      volumes: ~
+---
+apiVersion: "v1"
+items:
+- apiVersion: "v1"
+  kind: "Service"
+  metadata:
+    name: "api-set"
+  spec:
+    clusterIP: "None"
+    ports:
+    - name: "api"
+      port: 9022
+      protocol: "TCP"
+      targetPort: 0
+    - name: "api-tls"
+      port: 9023
+      protocol: "TCP"
+      targetPort: 0
+    - name: "statsd"
+      port: 8125
+      protocol: "TCP"
+      targetPort: 0
+    selector:
+      skiff-role-name: "api"
+    type: "ClusterIP"
+- apiVersion: "v1"
+  kind: "Service"
+  metadata:
+    name: "api"
+  spec:
+    ports:
+    - name: "api"
+      port: 9022
+      protocol: "TCP"
+      targetPort: "api"
+    - name: "api-tls"
+      port: 9023
+      protocol: "TCP"
+      targetPort: "api-tls"
+    - name: "statsd"
+      port: 8125
+      protocol: "TCP"
+      targetPort: "statsd"
+    selector:
+      skiff-role-name: "api"
+    type: "ClusterIP"
+kind: "List"

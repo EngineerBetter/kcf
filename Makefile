@@ -32,6 +32,7 @@ K8S_PROXY_PORT := 8001
 
 SCF_RELEASE_VERSION := 2.10.1
 SCF_DOMAIN := cf-dev.io
+SCF_RELEASE_URL := https://github.com/SUSE/scf/releases/download/$(SCF_RELEASE_VERSION)/scf-opensuse-$(SCF_RELEASE_VERSION).cf1.15.0.0.g647b2273.zip
 SCF_ADMIN_PASS := admin
 UAA_ADMIN_CLIENT_SECRET := admin
 
@@ -41,6 +42,7 @@ GIT_SUBMODULES_JOBS := 12
 #
 #
 .DEFAULT_GOAL := help
+.PHONY: scf-config-values.yml scf-release
 
 /usr/local/bin/gcloud:
 	@brew cask install google-cloud-sdk
@@ -162,9 +164,10 @@ token: kubectl ## Get token to auth into K8S Dashboard UI
 	pbcopy
 
 scf-release-$(SCF_RELEASE_VERSION):
-	@wget https://github.com/SUSE/scf/releases/download/$(SCF_RELEASE_VERSION)/scf-opensuse-$(SCF_RELEASE_VERSION).cf1.15.0.0.g647b2273.zip && \
-	unzip scf-opensuse-$(SCF_RELEASE_VERSION).cf1.15.0.0.g647b2273.zip -d scf-release-$(SCF_RELEASE_VERSION) && \
+	@wget --continue --show-progress --output-document /tmp/scf-release-$(SCF_RELEASE_VERSION).zip $(SCF_RELEASE_URL) && \
+	unzip /tmp/scf-release-$(SCF_RELEASE_VERSION).zip -d scf-release-$(SCF_RELEASE_VERSION) && \
 	ln -sf scf-release-$(SCF_RELEASE_VERSION) scf-release
+scf-release: scf-release-$(SCF_RELEASE_VERSION)
 
 define SCF_CONFIG =
 env:
@@ -184,10 +187,6 @@ endef
 export SCF_CONFIG
 scf-config-values.yml:
 	@echo "$$SCF_CONFIG" > scf-config-values.yml
-
-.PHONY: scf-config-values.yml
-
-scf-release: scf-release-$(SCF_RELEASE_VERSION)
 
 delete-uaa: kubectl helm
 	@kubectl delete namespace uaa-opensuse && \

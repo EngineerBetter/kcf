@@ -1,0 +1,111 @@
+---
+# The mysql-proxy role contains the following jobs:
+#
+# - global-uaa-properties: Dummy BOSH job used to host global parameters that
+#   are required to configure SCF / fissile
+#
+# - patch-properties: Dummy BOSH job used to host parameters that are used in
+#   SCF patches for upstream bugs
+#
+# Also: proxy
+apiVersion: "extensions/v1beta1"
+kind: "Deployment"
+metadata:
+  name: "mysql-proxy"
+  labels:
+    skiff-role-name: "mysql-proxy"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      skiff-role-name: "mysql-proxy"
+  template:
+    metadata:
+      name: "mysql-proxy"
+      labels:
+        skiff-role-name: "mysql-proxy"
+    spec:
+      containers:
+      - env:
+        - name: "KUBERNETES_NAMESPACE"
+          valueFrom:
+            fieldRef:
+              fieldPath: "metadata.namespace"
+        - name: "MONIT_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "monit-password"
+              name: "secrets"
+        - name: "MYSQL_PROXY_ADMIN_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "mysql-proxy-admin-password"
+              name: "secrets"
+        - name: "SCF_LOG_PROTOCOL"
+          value: "tcp"
+        image: "splatform/uaa-mysql-proxy:9bb817957501204c7a83fbbb76b54896e1fe32d7"
+        lifecycle:
+          preStop:
+            exec:
+              command:
+              - "/opt/fissile/pre-stop.sh"
+        livenessProbe: ~
+        name: "mysql-proxy"
+        ports:
+        - containerPort: 3306
+          name: "mysql-proxy"
+          protocol: "TCP"
+        - containerPort: 80
+          name: "api"
+          protocol: "TCP"
+        - containerPort: 1936
+          name: "healthcheck"
+          protocol: "TCP"
+        readinessProbe:
+          failureThreshold: 0
+          httpGet:
+            path: "/"
+            port: 1936
+            scheme: "HTTP"
+          initialDelaySeconds: 0
+          periodSeconds: 0
+          successThreshold: 0
+          timeoutSeconds: 0
+        resources:
+          requests:
+            memory: "63Mi"
+            cpu: "2000m"
+          limits: {}
+        securityContext: ~
+        volumeMounts: ~
+      dnsPolicy: "ClusterFirst"
+      imagePullSecrets:
+      - name: "registry-credentials"
+      restartPolicy: "Always"
+      terminationGracePeriodSeconds: 600
+      volumes: ~
+---
+apiVersion: "v1"
+items:
+- apiVersion: "v1"
+  kind: "Service"
+  metadata:
+    name: "mysql-proxy"
+  spec:
+    ports:
+    - name: "mysql-proxy"
+      port: 3306
+      protocol: "TCP"
+      targetPort: "mysql-proxy"
+    - name: "api"
+      port: 80
+      protocol: "TCP"
+      targetPort: "api"
+    - name: "healthcheck"
+      port: 1936
+      protocol: "TCP"
+      targetPort: "healthcheck"
+    selector:
+      skiff-role-name: "mysql-proxy"
+    type: "ClusterIP"
+kind: "List"

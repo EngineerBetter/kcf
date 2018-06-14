@@ -1,0 +1,127 @@
+---
+# The consul role contains the following jobs:
+#
+# - global-properties: Dummy BOSH job used to host global parameters that are
+#   required to configure SCF
+#
+# Also: consul_agent
+apiVersion: "apps/v1beta1"
+kind: "StatefulSet"
+metadata:
+  name: "consul"
+  labels:
+    skiff-role-name: "consul"
+spec:
+  replicas: 0
+  serviceName: "consul-set"
+  template:
+    metadata:
+      name: "consul"
+      labels:
+        skiff-role-name: "consul"
+    spec:
+      containers:
+      - env:
+        - name: "CONSUL_SERVER_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "consul-server-cert"
+              name: "secrets"
+        - name: "CONSUL_SERVER_ENCRYPT_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "consul-server-encrypt-key"
+              name: "secrets"
+        - name: "CONSUL_SERVER_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "consul-server-key"
+              name: "secrets"
+        - name: "INTERNAL_CA_CERT"
+          valueFrom:
+            secretKeyRef:
+              key: "internal-ca-cert"
+              name: "secrets"
+        - name: "INTERNAL_CA_KEY"
+          valueFrom:
+            secretKeyRef:
+              key: "internal-ca-key"
+              name: "secrets"
+        - name: "KUBERNETES_NAMESPACE"
+          valueFrom:
+            fieldRef:
+              fieldPath: "metadata.namespace"
+        - name: "MONIT_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "monit-password"
+              name: "secrets"
+        - name: "SCF_LOG_PROTOCOL"
+          value: "tcp"
+        image: "splatform/scf-consul:8cf1550abe55836b0e64c15da3b4bae66c7f5154"
+        lifecycle:
+          preStop:
+            exec:
+              command:
+              - "/opt/fissile/pre-stop.sh"
+        livenessProbe: ~
+        name: "consul"
+        ports:
+        - containerPort: 8300
+          name: "consul-server"
+          protocol: "TCP"
+        - containerPort: 8500
+          name: "consul-http"
+          protocol: "TCP"
+        - containerPort: 8301
+          name: "serf-tcp"
+          protocol: "TCP"
+        - containerPort: 8301
+          name: "serf-udp"
+          protocol: "UDP"
+        readinessProbe:
+          tcpSocket:
+            port: 8300
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "1000m"
+          limits: {}
+        securityContext: ~
+        volumeMounts: ~
+      dnsPolicy: "ClusterFirst"
+      imagePullSecrets:
+      - name: "registry-credentials"
+      restartPolicy: "Always"
+      terminationGracePeriodSeconds: 600
+      volumes: ~
+---
+apiVersion: "v1"
+items:
+- apiVersion: "v1"
+  kind: "Service"
+  metadata:
+    name: "consul-set"
+  spec:
+    clusterIP: "None"
+    ports:
+    - name: "consul-server"
+      port: 8300
+      protocol: "TCP"
+      targetPort: 0
+    - name: "consul-http"
+      port: 8500
+      protocol: "TCP"
+      targetPort: 0
+    - name: "serf-tcp"
+      port: 8301
+      protocol: "TCP"
+      targetPort: 0
+    - name: "serf-udp"
+      port: 8301
+      protocol: "UDP"
+      targetPort: 0
+    selector:
+      skiff-role-name: "consul"
+    type: "ClusterIP"
+kind: "List"
