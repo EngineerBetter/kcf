@@ -31,8 +31,8 @@ K8S_NODES := 1
 K8S_PROXY_PORT := 8001
 
 SCF_RELEASE_VERSION := 2.10.1
-SCF_DOMAIN := cf-dev.io
 SCF_RELEASE_URL := https://github.com/SUSE/scf/releases/download/$(SCF_RELEASE_VERSION)/scf-opensuse-$(SCF_RELEASE_VERSION).cf1.15.0.0.g647b2273.zip
+SCF_DOMAIN := kcf.engineerbetter.com
 SCF_ADMIN_PASS := admin
 UAA_ADMIN_CLIENT_SECRET := admin
 

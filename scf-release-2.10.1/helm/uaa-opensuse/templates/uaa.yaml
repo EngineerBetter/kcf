@@ -328,5 +328,5 @@ items:
       targetPort: "uaa-ssl"
     selector:
       skiff-role-name: "uaa"
-    type: {{ if .Values.services.loadbalanced }} LoadBalancer {{ else }} ClusterIP {{ end }}
+    type: LoadBalancer
 kind: "List"
