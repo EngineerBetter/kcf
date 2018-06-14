@@ -127,7 +127,7 @@ contexts: kubectl ## Show all contexts
 connect: gcloud ## Configure kubectl command line access
 	@gcloud container clusters get-credentials $(K8S_NAME)
 
-delete: gcloud ## Delete an existing K8S cluster
+d-e-l-e-t-e: gcloud ## Delete an existing K8S cluster
 	@gcloud container clusters delete $(K8S_NAME)
 
 info: kubectl ## Show K8S cluster info
