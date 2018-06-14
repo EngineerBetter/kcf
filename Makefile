@@ -30,6 +30,11 @@ K8S_MACHINE_TYPE := n1-highcpu-2
 K8S_NODES := 1
 K8S_PROXY_PORT := 8001
 
+SCF_RELEASE_VERSION := 2.10.1
+SCF_DOMAIN := cf-dev.io
+SCF_ADMIN_PASS := admin
+UAA_ADMIN_CLIENT_SECRET := admin
+
 GIT_SUBMODULES_JOBS := 12
 
 ### TARGETS ###
@@ -156,7 +161,54 @@ token: kubectl ## Get token to auth into K8S Dashboard UI
 	jq -r '.users[] | select(.name | endswith("$(K8S_NAME)")).user."auth-provider".config."access-token"' | \
 	pbcopy
 
-verify: scf ## Verify if K8S is ready for SCF
-	@cd scf && \
-	direnv allow && \
-	bin/dev/kube-ready-state-check.sh kube
+scf-release-$(SCF_RELEASE_VERSION):
+	@wget https://github.com/SUSE/scf/releases/download/$(SCF_RELEASE_VERSION)/scf-opensuse-$(SCF_RELEASE_VERSION).cf1.15.0.0.g647b2273.zip && \
+	unzip scf-opensuse-$(SCF_RELEASE_VERSION).cf1.15.0.0.g647b2273.zip -d scf-release-$(SCF_RELEASE_VERSION) && \
+	ln -sf scf-release-$(SCF_RELEASE_VERSION) scf-release
+
+define SCF_CONFIG =
+env:
+    DOMAIN: $(SCF_DOMAIN)
+    UAA_HOST: uaa.$(SCF_DOMAIN)
+    UAA_PORT: 2793
+services:
+    loadbalanced: true
+kube:
+    external_ips: [$(shell kubectl get nodes -o jsonpath={.items[*].status.addresses[?\(@.type==\"ExternalIP\"\)].address})]
+    storage_class:
+        persistent: "standard"
+        shared: "shared"
+    auth: rbac
+secrets:
+    CLUSTER_ADMIN_PASSWORD: $(SCF_ADMIN_PASS)
+    UAA_ADMIN_CLIENT_SECRET: $(UAA_ADMIN_CLIENT_SECRET)
+endef
+export SCF_CONFIG
+scf-config-values.yml:
+	@echo "$$SCF_CONFIG" > scf-config-values.yml
+
+.PHONY: scf-config-values.yml
+
+scf-release: scf-release-$(SCF_RELEASE_VERSION)
+
+delete-uaa: kubectl helm
+	@kubectl delete namespace uaa-opensuse && \
+	helm delete --purge uaa
+
+deploy-uaa: scf-release scf-config-values.yml ## Deploy UAA
+	@cd scf-release && \
+	helm install helm/uaa-opensuse \
+	--namespace uaa-opensuse \
+	--values ../scf-config-values.yml \
+	--name uaa
+
+upgrade-uaa: scf-release scf-config-values.yml ## Upgrade UAA
+	@cd scf-release && \
+	helm upgrade \
+	--namespace uaa-opensuse \
+	--values ../scf-config-values.yml \
+	uaa helm/uaa-opensuse
+
+verify: scf-release ## Verify if K8S is ready for SCF
+	@cd scf-release && \
+	./kube-ready-state-check.sh kube
