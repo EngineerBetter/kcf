@@ -86,9 +86,13 @@ config: configuration
 	gcloud config set compute/region $(GCP_REGION) && \
 	gcloud config set compute/zone $(GCP_ZONE)
 
+helm_service_account:
+	@kubectl create -f helm-service-account.yml && \
+	helm init --service-account helm
+
 k8s:: create ## Set up a new cluster
 k8s:: connect
-k8s:: tiller
+k8s:: helm_service_account
 k8s:: token
 k8s:: ui
 k8s:: proxy
@@ -119,9 +123,6 @@ create: gcloud ## Create a new K8S cluster
 
 contexts: kubectl ## Show all contexts
 	@kubectl config get-contexts
-
-tiller: helm
-	@helm init
 
 connect: gcloud ## Configure kubectl command line access
 	@gcloud container clusters get-credentials $(K8S_NAME)
