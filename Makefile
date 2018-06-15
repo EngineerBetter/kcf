@@ -118,7 +118,7 @@ create: gcloud ## Create a new K8S cluster
 	@gcloud container clusters describe $(K8S_NAME) >/dev/null || \
 	gcloud container clusters create $(K8S_NAME) \
 	--zone=$(GCP_ZONE) \
-	--node-locations=$(GCP_ZONE),$(GCP_ADDITIONAL_ZONES) \
+	--node-locations=$(GCP_ZONE) \
 	--machine-type=$(K8S_MACHINE_TYPE) \
 	--num-nodes=$(K8S_NODES) \
 	--enable-autorepair \
