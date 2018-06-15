@@ -171,8 +171,6 @@ env:
     DOMAIN: $(SCF_DOMAIN)
     UAA_HOST: uaa.$(SCF_DOMAIN)
     UAA_PORT: 2793
-services:
-    loadbalanced: true
 kube:
     external_ips: [$(shell kubectl get nodes -o jsonpath={.items[*].status.addresses[?\(@.type==\"ExternalIP\"\)].address})]
     storage_class:
