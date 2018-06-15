@@ -23,7 +23,6 @@ endif
 GCP_PROJECT := kncf
 GCP_REGION := europe-west1
 GCP_ZONE := $(GCP_REGION)-d
-GCP_ADDITIONAL_ZONES := $(GCP_REGION)-b,$(GCP_REGION)-c
 
 K8S_NAME := t$(shell date +'%Y%m%d')
 K8S_MACHINE_TYPE := n1-highcpu-2
