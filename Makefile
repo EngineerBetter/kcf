@@ -27,6 +27,7 @@ K8S_NAME ?= t$(shell date +'%Y%m%d')
 K8S_MACHINE_TYPE ?= n1-highcpu-16
 K8S_NODES ?= 1
 K8S_PROXY_PORT ?= 8001
+K8S_IMAGE_TYPE ?= UBUNTU
 
 SCF_RELEASE_VERSION ?= 2.10.1
 SCF_RELEASE_URL ?= https://github.com/SUSE/scf/releases/download/$(SCF_RELEASE_VERSION)/scf-opensuse-$(SCF_RELEASE_VERSION).cf1.15.0.0.g647b2273.zip
@@ -132,11 +133,10 @@ create: gcloud ## Create a new K8S cluster
 	@gcloud container clusters describe $(K8S_NAME) >/dev/null || \
 	gcloud container clusters create $(K8S_NAME) \
 	--zone=$(GCP_ZONE) \
+	--image-type=$(K8S_IMAGE_TYPE) \
 	--node-locations=$(GCP_ZONE) \
 	--machine-type=$(K8S_MACHINE_TYPE) \
 	--num-nodes=$(K8S_NODES) \
-	--enable-autorepair \
-	--enable-autoupgrade \
 	--addons=HttpLoadBalancing,KubernetesDashboard
 
 contexts: kubectl ## Show all contexts
