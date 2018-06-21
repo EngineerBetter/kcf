@@ -87,6 +87,9 @@ machines: gcloud ## Show all machine types in the current zone
 	@gcloud compute machine-types list --filter="zone:($(GCP_ZONE))"
 # gcloud compute machine-types describe n1-highmem-4 --zone=europe-west1-d
 
+instances: gcloud ## Show all instances
+	@gcloud compute instances list
+
 regions: gcloud ## Show all regions
 	@gcloud compute regions list
 quotas: regions ## Show GCP quotas
