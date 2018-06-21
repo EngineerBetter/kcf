@@ -10,8 +10,7 @@ ifneq ($(PLATFORM),Darwin)
 endif
 
 ifneq (4,$(firstword $(sort $(MAKE_VERSION) 4)))
-  @brew install make
-  $(error $(BOLD)$(RED)GNU Make v4 or above is required$(NORMAL), please use $(BOLD)gmake$(NORMAL) instead of make)
+  $(error $(BOLD)$(RED)GNU Make v4 or above is required$(NORMAL), please install with $(BOLD)brew install gmake$(NORMAL) and use $(BOLD)gmake$(NORMAL) instead of make)
 endif
 
 ### VARS ###
