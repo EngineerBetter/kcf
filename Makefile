@@ -30,7 +30,9 @@ K8S_PROXY_PORT ?= 8001
 
 SCF_RELEASE_VERSION ?= 2.10.1
 SCF_RELEASE_URL ?= https://github.com/SUSE/scf/releases/download/$(SCF_RELEASE_VERSION)/scf-opensuse-$(SCF_RELEASE_VERSION).cf1.15.0.0.g647b2273.zip
-SCF_DOMAIN ?= kcf.engineerbetter.com
+DNS_ZONE ?= kcf
+DNS_ZONE_DESCRIPTION ?= Finger licking good
+SCF_DOMAIN ?= $(DNS_ZONE).engineerbetter.com
 SCF_ADMIN_PASS ?= admin
 UAA_ADMIN_CLIENT_SECRET ?= admin
 
@@ -245,3 +247,8 @@ logs: kubectl ## Tail pod logs
 watch: kubectl ## Watch a K8S namespace
 	@select NAMESPACE in $$(kubectl get namespaces -o=name | awk -F/ '{ print $$2 }'); do break; done && \
 	watch kubectl get all -n $$NAMESPACE
+
+dns: gcloud ## Setup DNS zone on GCP
+	@gcloud dns managed-zones describe $(DNS_ZONE) || \
+	gcloud dns managed-zones create $(DNS_ZONE) --dns-name=$(SCF_DOMAIN). \
+	  --description="$(DNS_ZONE_DESCRIPTION)"
