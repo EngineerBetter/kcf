@@ -241,3 +241,7 @@ logs: kubectl ## Tail pod logs
 	@select NAMESPACE in $$(kubectl get namespaces -o=name | awk -F/ '{ print $$2 }'); do break; done && \
 	select POD in $$(kubectl get pods -o=name -n $$NAMESPACE | awk -F/ '{ print $$2 }'); do break; done && \
 	kubectl logs $$POD -n $$NAMESPACE -f
+
+watch: kubectl ## Watch a K8S namespace
+	@select NAMESPACE in $$(kubectl get namespaces -o=name | awk -F/ '{ print $$2 }'); do break; done && \
+	watch kubectl get all -n $$NAMESPACE
