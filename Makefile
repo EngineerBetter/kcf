@@ -124,8 +124,7 @@ create: gcloud ## Create a new K8S cluster
 	--num-nodes=$(K8S_NODES) \
 	--enable-autorepair \
 	--enable-autoupgrade \
-	--addons=HttpLoadBalancing,KubernetesDashboard \
-	--preemptible
+	--addons=HttpLoadBalancing,KubernetesDashboard
 
 contexts: kubectl ## Show all contexts
 	@kubectl config get-contexts
