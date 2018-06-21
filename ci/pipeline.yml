@@ -62,6 +62,8 @@ jobs:
 
 - name: destroy-eks
   plan:
+  - get: kcf-repo
+    passed: [setup-eks]
   - get: eks
     passed: [setup-eks]
   - put: eks
