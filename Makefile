@@ -197,9 +197,10 @@ uaa: scf-release scf-config-values.yml ## Deploy UAA
 	--values ../scf-config-values.yml \
 	--name uaa
 
-kcf::
+uaa-ca-cert-secret:
 	$(eval UAA_CA_CERT_SECRET = $(shell kubectl get pods --namespace uaa-opensuse -o jsonpath='{.items[*].spec.containers[?(.name=="uaa")].env[?(.name=="INTERNAL_CA_CERT")].valueFrom.secretKeyRef.name}'))
-kcf:: scf-release scf-config-values.yml ## Deploy UAA
+
+kcf: uaa-ca-cert-secret scf-release scf-config-values.yml ## Deploy Cloud Foundry
 	@cd scf-release && \
 	IFS= helm install helm/cf-opensuse \
 	--namespace scf \
@@ -207,9 +208,7 @@ kcf:: scf-release scf-config-values.yml ## Deploy UAA
 	--name scf \
 	--set secrets.UAA_CA_CERT="$$(kubectl get secret $(UAA_CA_CERT_SECRET) --namespace uaa-opensuse -o jsonpath="{.data['internal-ca-cert']}" | base64 --decode -)"
 
-upgrade-kcf::
-	$(eval UAA_CA_CERT_SECRET = $(shell kubectl get pods --namespace uaa-opensuse -o jsonpath='{.items[*].spec.containers[?(.name=="uaa")].env[?(.name=="INTERNAL_CA_CERT")].valueFrom.secretKeyRef.name}'))
-upgrade-kcf:: scf-release scf-config-values.yml ## Deploy UAA
+upgrade-kcf: uaa-ca-cert-secret scf-release scf-config-values.yml ## Upgrade Cloud Foundry
 	@cd scf-release && \
 	IFS= helm upgrade scf helm/cf-opensuse \
 	--namespace scf \
