@@ -236,3 +236,8 @@ upgrade-uaa: scf-release scf-config-values.yml ## Upgrade UAA
 verify: scf-release ## Verify if K8S is ready for SCF
 	@cd scf-release && \
 	./kube-ready-state-check.sh kube
+
+logs: kubectl ## Tail pod logs
+	@select NAMESPACE in $$(kubectl get namespaces -o=name | awk -F/ '{ print $$2 }'); do break; done && \
+	select POD in $$(kubectl get pods -o=name -n $$NAMESPACE | awk -F/ '{ print $$2 }'); do break; done && \
+	kubectl logs $$POD -n $$NAMESPACE -f
