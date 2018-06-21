@@ -90,6 +90,10 @@ machines: gcloud ## Show all machine types in the current zone
 instances: gcloud ## Show all instances
 	@gcloud compute instances list
 
+ssh: gcloud ## SSH into an instance
+	@select INSTANCE in $$(gcloud compute instances list --format="get(name)"); do break; done && \
+	gcloud compute ssh $$INSTANCE
+
 regions: gcloud ## Show all regions
 	@gcloud compute regions list
 quotas: regions ## Show GCP quotas
