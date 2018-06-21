@@ -111,6 +111,7 @@ helm_service_account:
 	helm init --service-account helm
 
 k8s:: create ## Set up a new cluster
+k8s:: enable-swap-accounting
 k8s:: connect
 k8s:: helm_service_account
 k8s:: token
@@ -138,6 +139,13 @@ create: gcloud ## Create a new K8S cluster
 	--machine-type=$(K8S_MACHINE_TYPE) \
 	--num-nodes=$(K8S_NODES) \
 	--addons=HttpLoadBalancing,KubernetesDashboard
+
+enable-swap-accounting: gcloud
+	@for instance in $$(gcloud compute instances list --filter="metadata.items.key['cluster-name']['value']='$(K8S_NAME)'" --format="get(name)"); \
+	do \
+	  gcloud compute ssh $$instance -- \
+	    "grep swapaccount=1 /proc/cmdline || (sudo sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT=\"console=ttyS0 net.ifnames=0\"/GRUB_CMDLINE_LINUX_DEFAULT=\"console=ttyS0 net.ifnames=0 swapaccount=1\"/g' /etc/default/grub.d/50-cloudimg-settings.cfg && sudo update-grub && sudo shutdown -r 1)" ;\
+	done
 
 contexts: kubectl ## Show all contexts
 	@kubectl config get-contexts
