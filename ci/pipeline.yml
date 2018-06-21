@@ -1,0 +1,71 @@
+---
+resource_types:
+- name: terraform
+  type: docker-image
+  source:
+    repository: ljfranklin/terraform-resource
+
+resources:
+- name: kcf-repo
+  type: git
+  webhook_token: foo
+  check_every: 24h
+  source:
+    uri: https://github.com/EngineerBetter/kcf.git
+
+- name: ci-bucket
+  type: terraform
+  source:
+    storage:
+      bucket_path: terraform/ci/
+      << : &tf-storage
+        bucket: kcf-pipeline
+        access_key_id: ((concourse_ci_s3_access_key))
+        secret_access_key: ((concourse_ci_s3_secret_key))
+    << : &tf-vars
+      vars:
+        key_dir: private-key
+        region: us-east-1
+    << : &tf-env
+      env:
+        AWS_ACCESS_KEY_ID: ((concourse_ci_s3_access_key))
+        AWS_SECRET_ACCESS_KEY: ((concourse_ci_s3_secret_key))
+
+- name: eks
+  type: terraform
+  source:
+    storage:
+      bucket_path: terraform/eks/
+      <<: *tf-storage
+    << : *tf-vars
+    << : *tf-env
+
+jobs:
+- name: setup-ci-bucket
+  plan:
+  - get: kcf-repo
+    trigger: true
+  - put: ci-bucket
+    params:
+      terraform_source: kcf-repo/terraform/aws/ci
+      env_name: dev
+
+- name: setup-eks
+  plan:
+  - get: kcf-repo
+    trigger: true
+    passed: [setup-ci-bucket]
+  - put: eks
+    params:
+      terraform_source: kcf-repo/terraform/aws/eks
+      env_name: dev
+
+- name: destroy-eks
+  plan:
+  - get: eks
+    passed: [setup-eks]
+  - put: eks
+    params:
+      action: destroy
+      terraform_source: kcf-repo/terraform/aws/eks
+      env_name: dev
