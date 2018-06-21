@@ -25,7 +25,7 @@ GCP_REGION := europe-west1
 GCP_ZONE := $(GCP_REGION)-d
 
 K8S_NAME := t$(shell date +'%Y%m%d')
-K8S_MACHINE_TYPE := n1-highcpu-2
+K8S_MACHINE_TYPE := n1-highcpu-16
 K8S_NODES := 1
 K8S_PROXY_PORT := 8001
 
@@ -196,6 +196,29 @@ uaa: scf-release scf-config-values.yml ## Deploy UAA
 	--namespace uaa-opensuse \
 	--values ../scf-config-values.yml \
 	--name uaa
+
+kcf::
+	$(eval UAA_CA_CERT_SECRET = $(shell kubectl get pods --namespace uaa-opensuse -o jsonpath='{.items[*].spec.containers[?(.name=="uaa")].env[?(.name=="INTERNAL_CA_CERT")].valueFrom.secretKeyRef.name}'))
+kcf:: scf-release scf-config-values.yml ## Deploy UAA
+	@cd scf-release && \
+	IFS= helm install helm/cf-opensuse \
+	--namespace scf \
+	--values ../scf-config-values.yml \
+	--name scf \
+	--set secrets.UAA_CA_CERT="$$(kubectl get secret $(UAA_CA_CERT_SECRET) --namespace uaa-opensuse -o jsonpath="{.data['internal-ca-cert']}" | base64 --decode -)"
+
+upgrade-kcf::
+	$(eval UAA_CA_CERT_SECRET = $(shell kubectl get pods --namespace uaa-opensuse -o jsonpath='{.items[*].spec.containers[?(.name=="uaa")].env[?(.name=="INTERNAL_CA_CERT")].valueFrom.secretKeyRef.name}'))
+upgrade-kcf:: scf-release scf-config-values.yml ## Deploy UAA
+	@cd scf-release && \
+	IFS= helm upgrade scf helm/cf-opensuse \
+	--namespace scf \
+	--values ../scf-config-values.yml \
+	--set secrets.UAA_CA_CERT="$$(kubectl get secret $(UAA_CA_CERT_SECRET) --namespace uaa-opensuse -o jsonpath="{.data['internal-ca-cert']}" | base64 --decode -)"
+
+delete-kcf: kubectl helm
+	@kubectl delete namespace scf && \
+	helm delete --purge scf
 
 upgrade-uaa: scf-release scf-config-values.yml ## Upgrade UAA
 	@cd scf-release && \

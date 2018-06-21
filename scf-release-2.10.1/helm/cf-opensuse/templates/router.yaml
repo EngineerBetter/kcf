@@ -400,5 +400,5 @@ items:
       targetPort: "router3"
     selector:
       skiff-role-name: "router"
-    type: {{ if .Values.services.loadbalanced }} LoadBalancer {{ else }} ClusterIP {{ end }}
+    type: LoadBalancer
 kind: "List"
