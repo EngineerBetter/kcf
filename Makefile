@@ -191,7 +191,7 @@ delete-uaa: kubectl helm
 	@kubectl delete namespace uaa-opensuse && \
 	helm delete --purge uaa
 
-deploy-uaa: scf-release scf-config-values.yml ## Deploy UAA
+uaa: scf-release scf-config-values.yml ## Deploy UAA
 	@cd scf-release && \
 	helm install helm/uaa-opensuse \
 	--namespace uaa-opensuse \
