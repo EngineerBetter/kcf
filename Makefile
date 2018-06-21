@@ -215,6 +215,9 @@ upgrade-kcf: uaa-ca-cert-secret scf-release scf-config-values.yml ## Upgrade Clo
 	--values ../scf-config-values.yml \
 	--set secrets.UAA_CA_CERT="$$(kubectl get secret $(UAA_CA_CERT_SECRET) --namespace uaa-opensuse -o jsonpath="{.data['internal-ca-cert']}" | base64 --decode -)"
 
+login-kcf: ## Login to CF as admin
+	@cf login -a https://api.$(SCF_DOMAIN) -u admin -p $(SCF_ADMIN_PASS) --skip-ssl-validation
+
 delete-kcf: kubectl helm
 	@kubectl delete namespace scf && \
 	helm delete --purge scf
