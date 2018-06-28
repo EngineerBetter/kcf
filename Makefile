@@ -317,9 +317,8 @@ resolve-uaa-kcf: uaa-ip kcf-ip dns ## Resolve UAA & KCF FQDNs to public LoadBala
 	gmake tools && \
 	gmake docker-deps && \
 	gmake all
-fissile: ~/go/src/github.com/SUSE/fissile
 
-bin/fissile: fissile
+bin/fissile: ~/go/src/github.com/SUSE/fissile
 	@cp ~/go/src/github.com/SUSE/fissile/build/darwin-amd64/fissile $(CURDIR)/bin/fissile
 
 /usr/local/bin/wget:
@@ -329,14 +328,21 @@ bin/bosh: /usr/local/bin/wget
 	@cd $(CURDIR)/bin && \
 	wget --continue --show-progress --output-document=bosh "$(BOSH_URL)" && \
 	chmod +x bosh && touch bosh
-bosh: bin/bosh
 
-dev-release: bosh
+dev-release: bin/bosh
 	@cd bosh-simple && $(CURDIR)/bin/bosh create-release --force
 
 compile-packages: dev-release bin/fissile
 	@$(CURDIR)/bin/fissile build packages \
 	  --release bosh-simple \
 	  --role-manifest bosh-simple/fissile/role-manifest.yml \
+	  --work-dir $(CURDIR)/tmp \
+	  --stemcell "$(FISSILE_STEMCELL)"
+
+build-images: compile-packages
+	@$(CURDIR)/bin/fissile build images --release bosh-simple \
+	  --role-manifest bosh-simple/fissile/role-manifest.yml \
+	 --light-opinions bosh-simple/fissile/opinions.yml \
+	 --dark-opinions bosh-simple/fissile/dark-opinions.yml \
 	  --work-dir $(CURDIR)/tmp \
 	  --stemcell "$(FISSILE_STEMCELL)"
