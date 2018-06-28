@@ -348,10 +348,20 @@ images: packages
 	  --work-dir $(CURDIR)/tmp \
 	  --stemcell "$(FISSILE_STEMCELL)"
 
-deployment: images
+deployment:
 	@$(CURDIR)/bin/fissile build kube \
 	  --release bosh-simple \
 	  --role-manifest bosh-simple/fissile/role-manifest.yml \
 	  --light-opinions bosh-simple/fissile/opinions.yml \
 	  --dark-opinions bosh-simple/fissile/dark-opinions.yml \
-	  --work-dir $(CURDIR)/tmp
+	  --work-dir $(CURDIR)/tmp \
+	  --output-dir bosh-simple/kube
+
+chart:
+	@$(CURDIR)/bin/fissile build helm \
+	  --release bosh-simple \
+	  --role-manifest bosh-simple/fissile/role-manifest.yml \
+	  --light-opinions bosh-simple/fissile/opinions.yml \
+	  --dark-opinions bosh-simple/fissile/dark-opinions.yml \
+	  --work-dir $(CURDIR)/tmp \
+	  --output-dir bosh-simple/helm
