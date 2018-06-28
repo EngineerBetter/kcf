@@ -228,11 +228,13 @@ uaa-ca-cert-secret:
 
 kcf: uaa uaa-ca-cert-secret ## Deploy Cloud Foundry
 	@cd scf-release && \
+	echo "Deploying KCF..." && \
 	IFS= helm install helm/cf-opensuse \
 	--namespace scf \
 	--values ../scf-config-values.yml \
 	--name scf \
-	--set secrets.UAA_CA_CERT="$$(kubectl get secret $(UAA_CA_CERT_SECRET) --namespace uaa-opensuse -o jsonpath="{.data['internal-ca-cert']}" | base64 --decode -)"
+	--set secrets.UAA_CA_CERT="$$(kubectl get secret $(UAA_CA_CERT_SECRET) --namespace uaa-opensuse -o jsonpath="{.data['internal-ca-cert']}" | base64 --decode -)" \
+	--wait
 
 upgrade-kcf: uaa-ca-cert-secret scf-release scf-config-values.yml ## Upgrade Cloud Foundry
 	@cd scf-release && \
