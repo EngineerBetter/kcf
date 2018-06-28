@@ -339,10 +339,11 @@ packages: dev-release bin/fissile
 	  --work-dir $(CURDIR)/tmp \
 	  --stemcell "$(FISSILE_STEMCELL)"
 
-build-images: compile-packages
-	@$(CURDIR)/bin/fissile build images --release bosh-simple \
+images: packages
+	@$(CURDIR)/bin/fissile build images \
+	  --release bosh-simple \
 	  --role-manifest bosh-simple/fissile/role-manifest.yml \
-	 --light-opinions bosh-simple/fissile/opinions.yml \
-	 --dark-opinions bosh-simple/fissile/dark-opinions.yml \
+	  --light-opinions bosh-simple/fissile/opinions.yml \
+	  --dark-opinions bosh-simple/fissile/dark-opinions.yml \
 	  --work-dir $(CURDIR)/tmp \
 	  --stemcell "$(FISSILE_STEMCELL)"
