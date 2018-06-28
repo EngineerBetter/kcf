@@ -321,7 +321,8 @@ bin/fissile: fissile
 	@cp ~/go/src/github.com/SUSE/fissile/build/darwin-amd64/fissile $(CURDIR)/bin/fissile
 
 compile-packages: bin/fissile
-	@$(CURDIR)/bin/fissile build packages --release bosh-simple \
+	@$(CURDIR)/bin/fissile build packages \
+	  --release bosh-simple \
 	  --role-manifest bosh-simple/fissile/role-manifest.yml \
 	  --work-dir $(CURDIR)/tmp \
 	  --stemcell "$(FISSILE_STEMCELL)"

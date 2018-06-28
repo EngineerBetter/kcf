@@ -1,7 +1,7 @@
 name: bosh-simple-spacebears
-version: "1"
-commit_hash: dc09e57
-uncommitted_changes: false
+version: 0+dev.1
+commit_hash: 82d55a7
+uncommitted_changes: true
 jobs:
 - name: spacebears
   version: 70177f9e28c8c2b9c8634d1dcc3424e83f786ec6
