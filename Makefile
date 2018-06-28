@@ -332,7 +332,7 @@ bin/bosh: /usr/local/bin/wget
 dev-release: bin/bosh
 	@cd bosh-simple && $(CURDIR)/bin/bosh create-release --force
 
-compile-packages: dev-release bin/fissile
+packages: dev-release bin/fissile
 	@$(CURDIR)/bin/fissile build packages \
 	  --release bosh-simple \
 	  --role-manifest bosh-simple/fissile/role-manifest.yml \
