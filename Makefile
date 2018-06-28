@@ -13,6 +13,8 @@ ifneq (4,$(firstword $(sort $(MAKE_VERSION) 4)))
   $(error $(BOLD)$(RED)GNU Make v4 or above is required$(NORMAL), please install with $(BOLD)brew install gmake$(NORMAL) and use $(BOLD)gmake$(NORMAL) instead of make)
 endif
 
+BOSH_URL := https://s3.amazonaws.com/bosh-cli-artifacts/bosh-cli-4.0.1-darwin-amd64
+
 ### VARS ###
 #
 
@@ -320,7 +322,19 @@ fissile: ~/go/src/github.com/SUSE/fissile
 bin/fissile: fissile
 	@cp ~/go/src/github.com/SUSE/fissile/build/darwin-amd64/fissile $(CURDIR)/bin/fissile
 
-compile-packages: bin/fissile
+/usr/local/bin/wget:
+	@brew install wget
+
+bin/bosh: /usr/local/bin/wget
+	@cd $(CURDIR)/bin && \
+	wget --continue --show-progress --output-document=bosh "$(BOSH_URL)" && \
+	chmod +x bosh && touch bosh
+bosh: bin/bosh
+
+dev-release: bosh
+	@cd bosh-simple && $(CURDIR)/bin/bosh create-release --force
+
+compile-packages: dev-release bin/fissile
 	@$(CURDIR)/bin/fissile build packages \
 	  --release bosh-simple \
 	  --role-manifest bosh-simple/fissile/role-manifest.yml \
