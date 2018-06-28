@@ -401,4 +401,5 @@ items:
     selector:
       skiff-role-name: "router"
     type: LoadBalancer
+    {{ if .Values.services.KCFloadBalancerIP }}loadBalancerIP: {{ .Values.services.KCFloadBalancerIP }} {{ end }}
 kind: "List"

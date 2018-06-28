@@ -43,7 +43,6 @@ GIT_SUBMODULES_JOBS ?= 12
 #
 #
 .DEFAULT_GOAL := help
-.PHONY: scf-config-values.yml scf-release
 
 /usr/local/bin/gcloud:
 	@brew cask install google-cloud-sdk
@@ -110,8 +109,8 @@ helm_service_account:
 	@kubectl create -f helm-service-account.yml && \
 	helm init --service-account helm
 
-k8s:: create ## Set up a new cluster
-k8s:: enable-swap-accounting
+k8s:: dns uaa-ip kcf-ip ## Set up a new cluster
+k8s:: create enable-swap-accounting
 k8s:: connect
 k8s:: helm_service_account
 k8s:: token
@@ -187,12 +186,16 @@ scf-release-$(SCF_RELEASE_VERSION):
 	unzip /tmp/scf-release-$(SCF_RELEASE_VERSION).zip -d scf-release-$(SCF_RELEASE_VERSION) && \
 	ln -sf scf-release-$(SCF_RELEASE_VERSION) scf-release
 scf-release: scf-release-$(SCF_RELEASE_VERSION)
+.PHONY: scf-release
 
 define SCF_CONFIG =
 env:
     DOMAIN: $(SCF_DOMAIN)
     UAA_HOST: uaa.$(SCF_DOMAIN)
     UAA_PORT: 2793
+services:
+    UAAloadBalancerIP: $(shell gcloud compute addresses describe $(K8S_NAME)-uaa --region=$(GCP_REGION) --format="get(address)")
+    KCFloadBalancerIP: $(shell gcloud compute addresses describe $(K8S_NAME)-kcf --region=$(GCP_REGION) --format="get(address)")
 kube:
     external_ips: [$(shell kubectl get nodes -o jsonpath={.items[*].status.addresses[?\(@.type==\"ExternalIP\"\)].address})]
     storage_class:
@@ -206,6 +209,7 @@ endef
 export SCF_CONFIG
 scf-config-values.yml:
 	@echo "$$SCF_CONFIG" > scf-config-values.yml
+.PHONY: scf-config-values.yml
 
 delete-uaa: kubectl helm
 	@kubectl delete namespace uaa-opensuse && \
@@ -267,3 +271,35 @@ dns: gcloud ## Setup DNS zone on GCP
 	@gcloud dns managed-zones describe $(DNS_ZONE) || \
 	gcloud dns managed-zones create $(DNS_ZONE) --dns-name=$(SCF_DOMAIN). \
 	  --description="$(DNS_ZONE_DESCRIPTION)"
+
+uaa-ip: gcloud ## Create a public IP for UAA
+	@gcloud compute addresses describe $(K8S_NAME)-uaa --region $(GCP_REGION) || \
+	gcloud compute addresses create $(K8S_NAME)-uaa --region $(GCP_REGION)
+
+kcf-ip: gcloud ## Create a public IP for KCF
+	@gcloud compute addresses describe $(K8S_NAME)-kcf --region $(GCP_REGION) || \
+	gcloud compute addresses create $(K8S_NAME)-kcf --region $(GCP_REGION)
+
+delete-ip: gcloud ## Delete a reserved IP
+	@gcloud compute addresses list && \
+	echo -e "\nWhich IP address do you want to delete?" && \
+	select IP in $$(gcloud compute addresses list --format="get(name)"); do break; done && \
+	gcloud compute addresses delete $$IP
+
+dns-records: gcloud ## List all DNS records
+	@gcloud dns record-sets list --zone $(DNS_ZONE)
+
+resolve-uaa-kcf: uaa-ip kcf-ip dns ## Resolve UAA & KCF FQDNs to public LoadBalancers
+	@rm -f transaction.yaml && \
+	gcloud dns record-sets transaction start --zone $(DNS_ZONE) && \
+	export UAA_PREVIOUS_IP=$$(gcloud dns record-sets list --zone kcf --filter="name = uaa.$(SCF_DOMAIN)." --format="get(rrdatas)") && \
+	(gcloud dns record-sets transaction remove --zone $(DNS_ZONE) --name "uaa.$(SCF_DOMAIN)." --ttl 60 --type A "$$UAA_PREVIOUS_IP" || true) && \
+	(gcloud dns record-sets transaction remove --zone $(DNS_ZONE) --name "scf.uaa.$(SCF_DOMAIN)." --ttl 60 --type A "$$UAA_PREVIOUS_IP" || true) && \
+	export UAA_CURRENT_IP=$$(gcloud compute addresses describe $(K8S_NAME)-uaa --region $(GCP_REGION) --format="get(address)") && \
+	gcloud dns record-sets transaction add --zone $(DNS_ZONE) --name "uaa.$(SCF_DOMAIN)." --ttl 60 --type A "$$UAA_CURRENT_IP" && \
+	gcloud dns record-sets transaction add --zone $(DNS_ZONE) --name "scf.uaa.$(SCF_DOMAIN)." --ttl 60 --type A "$$UAA_CURRENT_IP" && \
+	export KCF_PREVIOUS_IP=$$(gcloud dns record-sets list --zone kcf --filter="name = *.$(SCF_DOMAIN)." --format="get(rrdatas)") && \
+	(gcloud dns record-sets transaction remove --zone $(DNS_ZONE) --name "*.$(SCF_DOMAIN)." --ttl 60 --type A "$$KCF_PREVIOUS_IP" || true) && \
+	export KCF_CURRENT_IP=$$(gcloud compute addresses describe $(K8S_NAME)-kcf --region $(GCP_REGION) --format="get(address)") && \
+	gcloud dns record-sets transaction add --zone $(DNS_ZONE) --name "*.$(SCF_DOMAIN)." --ttl 60 --type A "$$KCF_CURRENT_IP" && \
+	gcloud dns record-sets transaction execute --zone $(DNS_ZONE)

@@ -329,4 +329,5 @@ items:
     selector:
       skiff-role-name: "uaa"
     type: LoadBalancer
+    {{ if .Values.services.UAAloadBalancerIP }}loadBalancerIP: {{ .Values.services.UAAloadBalancerIP }} {{ end }}
 kind: "List"
