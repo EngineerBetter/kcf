@@ -347,3 +347,11 @@ images: packages
 	  --dark-opinions bosh-simple/fissile/dark-opinions.yml \
 	  --work-dir $(CURDIR)/tmp \
 	  --stemcell "$(FISSILE_STEMCELL)"
+
+deployment: images
+	@$(CURDIR)/bin/fissile build kube \
+	  --release bosh-simple \
+	  --role-manifest bosh-simple/fissile/role-manifest.yml \
+	  --light-opinions bosh-simple/fissile/opinions.yml \
+	  --dark-opinions bosh-simple/fissile/dark-opinions.yml \
+	  --work-dir $(CURDIR)/tmp
