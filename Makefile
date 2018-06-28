@@ -318,7 +318,7 @@ resolve-uaa-kcf: uaa-ip kcf-ip dns ## Resolve UAA & KCF FQDNs to public LoadBala
 fissile: ~/go/src/github.com/SUSE/fissile
 
 bin/fissile: fissile
-	@cp ~/go/src/github.com/SUSE/fissile/build/darwin-amd64/fissible $(CURDIR)/bin/fissile
+	@cp ~/go/src/github.com/SUSE/fissile/build/darwin-amd64/fissile $(CURDIR)/bin/fissile
 
 compile-packages: bin/fissile
 	@$(CURDIR)/bin/fissile build packages --release bosh-simple \
