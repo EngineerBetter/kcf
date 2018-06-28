@@ -3,3 +3,5 @@ scf
 scf-config-values.yml
 tmp
 bin
+bosh/
+secrets/
