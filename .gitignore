@@ -1,3 +1,5 @@
 scf
 .envrc
 scf-config-values.yml
+tmp
+bin

@@ -1,0 +1,34 @@
+---
+
+name: bosh-simple
+
+releases:
+  - name: bosh-simple-spacebears
+    version: latest
+
+stemcells:
+  - name: bosh-google-kvm-ubuntu-trusty-go_agent
+    alias: trusty
+    version: latest
+
+update:
+  canaries: 1
+  max_in_flight: 10
+  canary_watch_time: 1000-30000
+  update_watch_time: 1000-30000
+
+instance_groups:
+  - name: spacebears_db_node
+    instances: 1
+    azs: [z1]
+    jobs:
+      - name: spacebears
+        release: bosh-simple-spacebears
+    properties:
+      spacebears:
+        password: NTZXwxRkPywjyWrk7fPW
+    vm_type: n1-highcpu-2
+    stemcell: trusty
+    persistent_disk_type: 5GB
+    networks:
+      - name: private

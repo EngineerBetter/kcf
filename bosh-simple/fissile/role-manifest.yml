@@ -1,0 +1,23 @@
+roles:
+- name: spacebears_db_node
+  jobs:
+  - name: spacebears
+    release_name: bosh-simple-spacebears
+  run:
+    memory: 256
+    virtual-cpus: 1
+    exposed-ports:
+    - name: spacebears
+      protocol: TCP
+      external: 9000
+      internal: 9000
+      public: false
+
+configuration:
+  templates:
+    properties.spacebears.password: ((SPACEBEARS_PASSWORD))
+  variables:
+  - name: SPACEBEARS_PASSWORD
+    description: Password for Spacebears
+    secret: true
+    required: true

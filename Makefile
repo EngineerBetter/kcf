@@ -39,6 +39,8 @@ UAA_ADMIN_CLIENT_SECRET ?= admin
 
 GIT_SUBMODULES_JOBS ?= 12
 
+FISSILE_STEMCELL ?= splatform/fissile-stemcell-opensuse:42.2
+
 ### TARGETS ###
 #
 #
@@ -306,3 +308,20 @@ resolve-uaa-kcf: uaa-ip kcf-ip dns ## Resolve UAA & KCF FQDNs to public LoadBala
 	export KCF_CURRENT_IP=$$(gcloud compute addresses describe $(K8S_NAME)-kcf --region $(GCP_REGION) --format="get(address)") && \
 	gcloud dns record-sets transaction add --zone $(DNS_ZONE) --name "*.$(SCF_DOMAIN)." --ttl 60 --type A "$$KCF_CURRENT_IP" && \
 	gcloud dns record-sets transaction execute --zone $(DNS_ZONE)
+
+~/go/src/github.com/SUSE/fissile:
+	@go get -d github.com/SUSE/fissile && \
+	cd ~/go/src/github.com/SUSE/fissile && \
+	gmake tools && \
+	gmake docker-deps && \
+	gmake all
+fissile: ~/go/src/github.com/SUSE/fissile
+
+bin/fissile: fissile
+	@cp ~/go/src/github.com/SUSE/fissile/build/darwin-amd64/fissible $(CURDIR)/bin/fissile
+
+compile-packages: bin/fissile
+	@$(CURDIR)/bin/fissile build packages --release bosh-simple \
+	  --role-manifest bosh-simple/fissile/role-manifest.yml \
+	  --work-dir $(CURDIR)/tmp \
+	  --stemcell "$(FISSILE_STEMCELL)"
