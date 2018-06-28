@@ -105,17 +105,13 @@ config: configuration
 	gcloud config set compute/region $(GCP_REGION) && \
 	gcloud config set compute/zone $(GCP_ZONE)
 
-helm_service_account:
-	@kubectl create -f helm-service-account.yml && \
-	helm init --service-account helm
+helm_service_account: kubectl helm
+	@(kubectl get serviceaccount helm -n kube-system || kubectl create -f helm-service-account.yml) && \
+	helm init --service-account helm --wait
 
-k8s:: dns uaa-ip kcf-ip ## Set up a new cluster
-k8s:: create enable-swap-accounting
-k8s:: connect
+k8s:: dns uaa-ip kcf-ip ## Set up a new K8S cluster
+k8s:: create enable-swap-accounting connect
 k8s:: helm_service_account
-k8s:: token
-k8s:: ui
-k8s:: proxy
 
 desc: kubectl ## Describe any K8S resource
 	@kubectl describe $(subst desc,,$(MAKECMDGOALS))
@@ -123,7 +119,7 @@ desc: kubectl ## Describe any K8S resource
 events: kubectl ## Show all K8S events
 	@kubectl get events
 
-list: gcloud ## Show all K8S clusters
+ls: gcloud ## Show all K8S clusters
 	@gcloud container clusters list
 
 cc: gcloud ## Show all available container config options
@@ -137,7 +133,8 @@ create: gcloud ## Create a new K8S cluster
 	--node-locations=$(GCP_ZONE) \
 	--machine-type=$(K8S_MACHINE_TYPE) \
 	--num-nodes=$(K8S_NODES) \
-	--addons=HttpLoadBalancing,KubernetesDashboard
+	--addons=HttpLoadBalancing,KubernetesDashboard \
+	--no-enable-autorepair
 
 enable-swap-accounting: gcloud
 	@for instance in $$(gcloud compute instances list --filter="metadata.items.key['cluster-name']['value']='$(K8S_NAME)'" --format="get(name)"); \
@@ -176,10 +173,12 @@ ui: ## Open K8S Dashboard UI in a browser
 proxy: kubectl ## Proxy to remote K8S Dashboard UI
 	@kubectl proxy --port=$(K8S_PROXY_PORT)
 
-token: kubectl ## Get token to auth into K8S Dashboard UI
+token: kubectl ## Copy token for K8S Dashboard auth into paste buffer
 	@kubectl config view -o json | \
 	jq -r '.users[] | select(.name | endswith("$(K8S_NAME)")).user."auth-provider".config."access-token"' | \
 	pbcopy
+
+dashboard: token ui proxy ## Open K8S Dashboard
 
 scf-release-$(SCF_RELEASE_VERSION):
 	@wget --continue --show-progress --output-document /tmp/scf-release-$(SCF_RELEASE_VERSION).zip $(SCF_RELEASE_URL) && \
@@ -215,17 +214,19 @@ delete-uaa: kubectl helm
 	@kubectl delete namespace uaa-opensuse && \
 	helm delete --purge uaa
 
-uaa: scf-release scf-config-values.yml ## Deploy UAA
+uaa: scf-release scf-config-values.yml k8s ## Deploy UAA
 	@cd scf-release && \
+	echo "Deploying UAA..." && \
 	helm install helm/uaa-opensuse \
 	--namespace uaa-opensuse \
 	--values ../scf-config-values.yml \
-	--name uaa
+	--name uaa \
+	--wait
 
 uaa-ca-cert-secret:
 	$(eval UAA_CA_CERT_SECRET = $(shell kubectl get pods --namespace uaa-opensuse -o jsonpath='{.items[*].spec.containers[?(.name=="uaa")].env[?(.name=="INTERNAL_CA_CERT")].valueFrom.secretKeyRef.name}'))
 
-kcf: uaa-ca-cert-secret scf-release scf-config-values.yml ## Deploy Cloud Foundry
+kcf: uaa uaa-ca-cert-secret ## Deploy Cloud Foundry
 	@cd scf-release && \
 	IFS= helm install helm/cf-opensuse \
 	--namespace scf \
