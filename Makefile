@@ -28,7 +28,6 @@ GCP_ZONE ?= $(GCP_REGION)-d
 K8S_NAME ?= t$(shell date +'%Y%m%d')
 K8S_MACHINE_TYPE ?= n1-highcpu-16
 K8S_NODES ?= 1
-K8S_PROXY_PORT ?= 8001
 K8S_IMAGE_TYPE ?= UBUNTU
 
 SCF_RELEASE_VERSION ?= 2.10.1
@@ -137,7 +136,7 @@ create: gcloud ## Create a new K8S cluster
 	--node-locations=$(GCP_ZONE) \
 	--machine-type=$(K8S_MACHINE_TYPE) \
 	--num-nodes=$(K8S_NODES) \
-	--addons=HttpLoadBalancing,KubernetesDashboard \
+	--addons=HttpLoadBalancing \
 	--no-enable-autorepair
 
 enable-swap-accounting: gcloud
@@ -171,18 +170,8 @@ services: kubectl ## Show all K8S services
 secrets: kubectl ## Show all K8S secrets
 	@kubectl describe --all-namespaces secrets
 
-ui: ## Open K8S Dashboard UI in a browser
-	@open http://127.0.0.1:$(K8S_PROXY_PORT)/ui
-
-proxy: kubectl ## Proxy to remote K8S Dashboard UI
-	@kubectl proxy --port=$(K8S_PROXY_PORT)
-
-token: kubectl ## Copy token for K8S Dashboard auth into paste buffer
-	@kubectl config view -o json | \
-	jq -r '.users[] | select(.name | endswith("$(K8S_NAME)")).user."auth-provider".config."access-token"' | \
-	pbcopy
-
-dashboard: token ui proxy ## Open K8S Dashboard
+dashboard: ## Open K8S Dashboard
+	@open https://console.cloud.google.com/kubernetes/workload
 
 scf-release-$(SCF_RELEASE_VERSION):
 	@wget --continue --show-progress --output-document /tmp/scf-release-$(SCF_RELEASE_VERSION).zip $(SCF_RELEASE_URL) && \
