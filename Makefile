@@ -335,7 +335,7 @@ packages: dev-release bin/fissile
 	  --work-dir $(CURDIR)/tmp \
 	  --stemcell "$(FISSILE_STEMCELL)"
 
-images: packages
+images:  bin/fissile packages
 	@$(CURDIR)/bin/fissile build images \
 	  --release bosh-simple \
 	  --role-manifest bosh-simple/fissile/role-manifest.yml \
@@ -344,7 +344,7 @@ images: packages
 	  --work-dir $(CURDIR)/tmp \
 	  --stemcell "$(FISSILE_STEMCELL)"
 
-deployment:
+deployment: bin/fissile
 	@$(CURDIR)/bin/fissile build kube \
 	  --release bosh-simple \
 	  --role-manifest bosh-simple/fissile/role-manifest.yml \
@@ -353,7 +353,7 @@ deployment:
 	  --work-dir $(CURDIR)/tmp \
 	  --output-dir bosh-simple/kube
 
-chart:
+bosh-simple/helm: bin/fissile
 	@$(CURDIR)/bin/fissile build helm \
 	  --release bosh-simple \
 	  --role-manifest bosh-simple/fissile/role-manifest.yml \
@@ -361,3 +361,13 @@ chart:
 	  --dark-opinions bosh-simple/fissile/dark-opinions.yml \
 	  --work-dir $(CURDIR)/tmp \
 	  --output-dir bosh-simple/helm
+chart: bosh-simple/helm
+
+simple: bosh-simple/helm helm
+	@(helm list --deployed | grep simple) || \
+	(cd bosh-simple && \
+	echo "Deploying a simple BOSH release..." && \
+	time helm install ./helm \
+	--namespace simple \
+	--name simple \
+	--wait)

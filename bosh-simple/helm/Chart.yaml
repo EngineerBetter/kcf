@@ -1,0 +1,4 @@
+apiVersion: 0.1.0
+description: A Helm chart for a simple BOSH release
+name: simple
+version: 0.1.0

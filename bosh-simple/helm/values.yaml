@@ -17,7 +17,7 @@ kube:
     hostname: "docker.io"
     username: ""
     password: ""
-  organization: ""
+  organization: "engineerbetter"
 config:
   # Flag to activate high-availability mode
   HA: false
@@ -42,9 +42,9 @@ services:
   loadbalanced: false
 secrets:
   # Password for Spacebears
-  SPACEBEARS_PASSWORD: ~
+  SPACEBEARS_PASSWORD: spacebear
 env:
-  KUBERNETES_CLUSTER_DOMAIN: ~
+  KUBERNETES_CLUSTER_DOMAIN: kcf.engineerbetter.com
 
 # The sizing section contains configuration to change each individual role. Due
 # to limitations on the allowable names, any dashes ("-") in the role names are
@@ -53,7 +53,7 @@ sizing:
   # The spacebears_db_node role contains the following jobs:
   #
   # spacebears
-  spacebears_db_node:
+  spacebearsdbnode:
     # Node affinity rules can be specified here
     affinity: {}
 
