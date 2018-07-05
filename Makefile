@@ -29,6 +29,7 @@ K8S_NAME ?= t$(shell date +'%Y%m%d')
 K8S_MACHINE_TYPE ?= n1-highcpu-16
 K8S_NODES ?= 1
 K8S_IMAGE_TYPE ?= UBUNTU
+K8S_WAIT_FOR_UPGRADES ?= 300
 
 SCF_RELEASE_VERSION ?= 2.10.1
 SCF_RELEASE_URL ?= https://github.com/SUSE/scf/releases/download/$(SCF_RELEASE_VERSION)/scf-opensuse-$(SCF_RELEASE_VERSION).cf1.15.0.0.g647b2273.zip
@@ -130,14 +131,17 @@ cc: gcloud ## Show all available container config options
 
 create: gcloud ## Create a new K8S cluster
 	@gcloud container clusters describe $(K8S_NAME) >/dev/null || \
-	gcloud container clusters create $(K8S_NAME) \
+	(gcloud container clusters create $(K8S_NAME) \
 	--zone=$(GCP_ZONE) \
 	--image-type=$(K8S_IMAGE_TYPE) \
 	--node-locations=$(GCP_ZONE) \
 	--machine-type=$(K8S_MACHINE_TYPE) \
 	--num-nodes=$(K8S_NODES) \
 	--addons=HttpLoadBalancing \
-	--no-enable-autorepair
+	--no-enable-autorepair \
+	--no-enable-autoupgrade && \
+	echo "Giving the cluster $(K8S_WAIT_FOR_UPGRADES)s to perform all upgrades before we continue " && \
+	sleep $(K8S_WAIT_FOR_UPGRADES))
 
 enable-swap-accounting: gcloud
 	@for instance in $$(gcloud compute instances list --filter="metadata.items.key['cluster-name']['value']='$(K8S_NAME)'" --format="get(name)"); \
