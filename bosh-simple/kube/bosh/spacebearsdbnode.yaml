@@ -1,22 +1,22 @@
 ---
-# The spacebears_db_node role contains the following jobs:
+# The spacebearsdbnode role contains the following jobs:
 #
 # spacebears
 apiVersion: "apps/v1beta1"
 kind: "StatefulSet"
 metadata:
-  name: "spacebears_db_node"
+  name: "spacebearsdbnode"
   labels:
-    skiff-role-name: "spacebears_db_node"
+    skiff-role-name: "spacebearsdbnode"
 spec:
   podManagementPolicy: "Parallel"
   replicas: 1
-  serviceName: "spacebears_db_node-set"
+  serviceName: "spacebearsdbnode-set"
   template:
     metadata:
-      name: "spacebears_db_node"
+      name: "spacebearsdbnode"
       labels:
-        skiff-role-name: "spacebears_db_node"
+        skiff-role-name: "spacebearsdbnode"
     spec:
       containers:
       - env:
@@ -29,14 +29,14 @@ spec:
             secretKeyRef:
               key: "spacebears-password"
               name: "secrets"
-        image: "fissile-spacebears_db_node:d90d6cafced59f07b9ba0542d8ba1f0df7ad1372"
+        image: "gerhard/fissile-spacebearsdbnode:d8549ea90cf8d276b6f43b780fa0c2e21206aa89"
         lifecycle:
           preStop:
             exec:
               command:
               - "/opt/fissile/pre-stop.sh"
         livenessProbe: ~
-        name: "spacebears_db_node"
+        name: "spacebearsdbnode"
         ports:
         - containerPort: 9000
           name: "spacebears"
@@ -64,7 +64,7 @@ items:
 - apiVersion: "v1"
   kind: "Service"
   metadata:
-    name: "spacebears_db_node-set"
+    name: "spacebearsdbnode-set"
   spec:
     clusterIP: "None"
     ports:
@@ -73,11 +73,11 @@ items:
       protocol: "TCP"
       targetPort: 0
     selector:
-      skiff-role-name: "spacebears_db_node"
+      skiff-role-name: "spacebearsdbnode"
 - apiVersion: "v1"
   kind: "Service"
   metadata:
-    name: "spacebears_db_node"
+    name: "spacebearsdbnode"
   spec:
     ports:
     - name: "spacebears"
@@ -85,5 +85,5 @@ items:
       protocol: "TCP"
       targetPort: "spacebears"
     selector:
-      skiff-role-name: "spacebears_db_node"
+      skiff-role-name: "spacebearsdbnode"
 kind: "List"

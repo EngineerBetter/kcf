@@ -1,8 +1,10 @@
 roles:
-- name: spacebears_db_node
+- name: spacebearsdbnode
   jobs:
   - name: spacebears
     release_name: bosh-simple-spacebears
+  processes:
+  - name: spacebears
   run:
     scaling:
       min: 1

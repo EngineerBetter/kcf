@@ -43,7 +43,9 @@ UAA_ADMIN_CLIENT_SECRET ?= admin
 
 GIT_SUBMODULES_JOBS ?= 12
 
-FISSILE_STEMCELL ?= splatform/fissile-stemcell-opensuse:42.2
+FISSILE_STEMCELL ?= splatform/fissile-stemcell-opensuse:42.3-6.g1785bff-30.31
+
+DOCKER_ORG ?= engineerbetter
 
 ### TARGETS ###
 #
@@ -332,46 +334,60 @@ bin/bosh: /usr/local/bin/wget
 dev-release: bin/bosh
 	@cd bosh-simple && $(CURDIR)/bin/bosh create-release --force
 
-packages: dev-release bin/fissile
-	@$(CURDIR)/bin/fissile build packages \
-	  --release bosh-simple \
-	  --role-manifest bosh-simple/fissile/role-manifest.yml \
-	  --work-dir $(CURDIR)/tmp \
-	  --stemcell "$(FISSILE_STEMCELL)"
+stemcell:
+	@docker pull $(FISSILE_STEMCELL)
 
-images:  bin/fissile packages
-	@$(CURDIR)/bin/fissile build images \
-	  --release bosh-simple \
-	  --role-manifest bosh-simple/fissile/role-manifest.yml \
-	  --light-opinions bosh-simple/fissile/opinions.yml \
-	  --dark-opinions bosh-simple/fissile/dark-opinions.yml \
-	  --work-dir $(CURDIR)/tmp \
-	  --stemcell "$(FISSILE_STEMCELL)"
+define FISSILE_OPTS
+--release bosh-simple \
+--role-manifest bosh-simple/fissile/role-manifest.yml \
+--light-opinions bosh-simple/fissile/opinions.yml \
+--dark-opinions bosh-simple/fissile/dark-opinions.yml \
+--work-dir $(CURDIR)/tmp \
+--docker-organization $(DOCKER_ORG)
+endef
+
+packages: dev-release bin/fissile stemcell
+	@$(CURDIR)/bin/fissile build packages $(FISSILE_OPTS) --stemcell "$(FISSILE_STEMCELL)"
+
+clean-images:
+	@rm -fr $(CURDIR)/tmp/{dockerfiles,compilation} && \
+	docker images | awk '/^$(DOCKER_ORG)\/fissile/ || /^fissile/ { system("docker rmi " $$1":"$$2) }'
+
+images: bin/fissile clean-images packages
+	@$(CURDIR)/bin/fissile build images $(FISSILE_OPTS) --stemcell "$(FISSILE_STEMCELL)" && \
+	for image in $$($(CURDIR)/bin/fissile show image $(FISSILE_OPTS)); \
+	do \
+	  docker push $$image; \
+	done
 
 deployment: bin/fissile
-	@$(CURDIR)/bin/fissile build kube \
-	  --release bosh-simple \
-	  --role-manifest bosh-simple/fissile/role-manifest.yml \
-	  --light-opinions bosh-simple/fissile/opinions.yml \
-	  --dark-opinions bosh-simple/fissile/dark-opinions.yml \
-	  --work-dir $(CURDIR)/tmp \
-	  --output-dir bosh-simple/kube
+	@$(CURDIR)/bin/fissile build kube $(FISSILE_OPTS) --output-dir bosh-simple/kube
 
-bosh-simple/helm: bin/fissile
-	@$(CURDIR)/bin/fissile build helm \
-	  --release bosh-simple \
-	  --role-manifest bosh-simple/fissile/role-manifest.yml \
-	  --light-opinions bosh-simple/fissile/opinions.yml \
-	  --dark-opinions bosh-simple/fissile/dark-opinions.yml \
-	  --work-dir $(CURDIR)/tmp \
-	  --output-dir bosh-simple/helm
-chart: bosh-simple/helm
+chart: deployment
+	@$(CURDIR)/bin/fissile build helm $(FISSILE_OPTS) --output-dir bosh-simple/helm
 
-simple: bosh-simple/helm helm
+define SIMPLE_CONFIG=
+env:
+    DOMAIN: $(SCF_DOMAIN)
+kube:
+    auth: rbac
+secrets:
+    SPACEBEARS_PASSWORD: $(SCF_ADMIN_PASS)
+endef
+export SIMPLE_CONFIG
+simple-config-values.yml:
+	@echo "$$SIMPLE_CONFIG" > simple-config-values.yml
+.PHONY: simple-config-values.yml
+simple: helm simple-config-values.yml chart
 	@(helm list --deployed | grep simple) || \
 	(cd bosh-simple && \
 	echo -e "\n$(BOLD)$(YELLOW)Deploying a simple BOSH release...$(NORMAL)\n" && \
 	helm install ./helm \
 	--namespace simple \
+	--values ../simple-config-values.yml \
 	--name simple \
 	--wait)
+
+delete-simple: kubectl helm connect
+	@kubectl delete namespace simple && \
+	helm delete --purge simple

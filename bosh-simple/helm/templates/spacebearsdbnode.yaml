@@ -62,7 +62,7 @@ spec:
             secretKeyRef:
               key: "spacebears-password"
               name: "secrets"
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/fissile-spacebearsdbnode:d90d6cafced59f07b9ba0542d8ba1f0df7ad1372"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/fissile-spacebearsdbnode:d8549ea90cf8d276b6f43b780fa0c2e21206aa89"
         lifecycle:
           preStop:
             exec:

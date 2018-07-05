@@ -17,7 +17,7 @@ kube:
     hostname: "docker.io"
     username: ""
     password: ""
-  organization: "engineerbetter"
+  organization: "gerhard"
 config:
   # Flag to activate high-availability mode
   HA: false
@@ -42,15 +42,15 @@ services:
   loadbalanced: false
 secrets:
   # Password for Spacebears
-  SPACEBEARS_PASSWORD: spacebear
+  SPACEBEARS_PASSWORD: ~
 env:
-  KUBERNETES_CLUSTER_DOMAIN: kcf.engineerbetter.com
+  KUBERNETES_CLUSTER_DOMAIN: ~
 
 # The sizing section contains configuration to change each individual role. Due
 # to limitations on the allowable names, any dashes ("-") in the role names are
 # replaced with underscores ("_").
 sizing:
-  # The spacebears_db_node role contains the following jobs:
+  # The spacebearsdbnode role contains the following jobs:
   #
   # spacebears
   spacebearsdbnode:
@@ -60,7 +60,7 @@ sizing:
     # Additional privileges can be specified here
     capabilities: []
 
-    # The spacebears_db_node role cannot be scaled.
+    # The spacebearsdbnode role cannot be scaled.
     count: 1
 
     # Unit [millicore]
