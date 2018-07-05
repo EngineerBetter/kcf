@@ -225,7 +225,8 @@ uaa-ca-cert-secret:
 	$(eval UAA_CA_CERT_SECRET = $(shell kubectl get pods --namespace uaa-opensuse -o jsonpath='{.items[*].spec.containers[?(.name=="uaa")].env[?(.name=="INTERNAL_CA_CERT")].valueFrom.secretKeyRef.name}'))
 
 kcf: uaa uaa-ca-cert-secret ## Deploy Cloud Foundry
-	@cd scf-release && \
+	@(helm list --deployed | grep scf) || \
+	(cd scf-release && \
 	echo "Deploying KCF..." && \
 	IFS= helm install helm/cf-opensuse \
 	--namespace scf \
