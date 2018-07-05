@@ -232,7 +232,8 @@ kcf: uaa uaa-ca-cert-secret ## Deploy Cloud Foundry
 	--values ../scf-config-values.yml \
 	--name scf \
 	--set secrets.UAA_CA_CERT="$$(kubectl get secret $(UAA_CA_CERT_SECRET) --namespace uaa-opensuse -o jsonpath="{.data['internal-ca-cert']}" | base64 --decode -)" \
-	--wait
+	--timeout 600 \
+	--wait)
 
 upgrade-kcf: uaa-ca-cert-secret scf-release scf-config-values.yml ## Upgrade Cloud Foundry
 	@cd scf-release && \
