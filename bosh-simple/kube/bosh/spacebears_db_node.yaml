@@ -1,0 +1,89 @@
+---
+# The spacebears_db_node role contains the following jobs:
+#
+# spacebears
+apiVersion: "apps/v1beta1"
+kind: "StatefulSet"
+metadata:
+  name: "spacebears_db_node"
+  labels:
+    skiff-role-name: "spacebears_db_node"
+spec:
+  podManagementPolicy: "Parallel"
+  replicas: 1
+  serviceName: "spacebears_db_node-set"
+  template:
+    metadata:
+      name: "spacebears_db_node"
+      labels:
+        skiff-role-name: "spacebears_db_node"
+    spec:
+      containers:
+      - env:
+        - name: "KUBERNETES_NAMESPACE"
+          valueFrom:
+            fieldRef:
+              fieldPath: "metadata.namespace"
+        - name: "SPACEBEARS_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "spacebears-password"
+              name: "secrets"
+        image: "fissile-spacebears_db_node:d90d6cafced59f07b9ba0542d8ba1f0df7ad1372"
+        lifecycle:
+          preStop:
+            exec:
+              command:
+              - "/opt/fissile/pre-stop.sh"
+        livenessProbe: ~
+        name: "spacebears_db_node"
+        ports:
+        - containerPort: 9000
+          name: "spacebears"
+          protocol: "TCP"
+        readinessProbe:
+          exec:
+            command:
+            - "/opt/fissile/readiness-probe.sh"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "1000m"
+          limits: {}
+        securityContext: ~
+        volumeMounts: ~
+      dnsPolicy: "ClusterFirst"
+      imagePullSecrets:
+      - name: "registry-credentials"
+      restartPolicy: "Always"
+      terminationGracePeriodSeconds: 600
+      volumes: ~
+---
+apiVersion: "v1"
+items:
+- apiVersion: "v1"
+  kind: "Service"
+  metadata:
+    name: "spacebears_db_node-set"
+  spec:
+    clusterIP: "None"
+    ports:
+    - name: "spacebears"
+      port: 9000
+      protocol: "TCP"
+      targetPort: 0
+    selector:
+      skiff-role-name: "spacebears_db_node"
+- apiVersion: "v1"
+  kind: "Service"
+  metadata:
+    name: "spacebears_db_node"
+  spec:
+    ports:
+    - name: "spacebears"
+      port: 9000
+      protocol: "TCP"
+      targetPort: "spacebears"
+    selector:
+      skiff-role-name: "spacebears_db_node"
+kind: "List"
