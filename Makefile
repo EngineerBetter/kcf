@@ -147,7 +147,7 @@ create: gcloud ## Create a new K8S cluster
 	  gcloud compute ssh $$instance -- \
 	    "grep swapaccount=1 /proc/cmdline || (sudo sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT=\"console=ttyS0 net.ifnames=0\"/GRUB_CMDLINE_LINUX_DEFAULT=\"console=ttyS0 net.ifnames=0 swapaccount=1\"/g' /etc/default/grub.d/50-cloudimg-settings.cfg && sudo update-grub && sudo shutdown -r 1)" ;\
 	done && \
-	echo "Giving the cluster $(K8S_WAIT_FOR_UPGRADES)s to perform all upgrades before we continue " && \
+	echo -e "\n$(BOLD)$(YELLOW)Giving the cluster $(K8S_WAIT_FOR_UPGRADES)s to perform all upgrades before we continue$(NORMAL)\n" && \
 	sleep $(K8S_WAIT_FOR_UPGRADES))
 
 contexts: kubectl connect ## Show all contexts
