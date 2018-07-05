@@ -156,8 +156,12 @@ contexts: kubectl connect ## Show all contexts
 connect: gcloud ## Configure kubectl command line access
 	@gcloud container clusters get-credentials $(K8S_NAME)
 
-d-e-l-e-t-e: gcloud ## Delete an existing K8S cluster
-	@gcloud container clusters delete $(K8S_NAME)
+delete: gcloud kubectl ## Delete an existing K8S cluster
+	@gcloud container clusters delete $(K8S_NAME) ; \
+	kubectl config unset clusters.gke_$${GCP_PROJECT_ID}_$(GCP_ZONE)_$(K8S_NAME) ; \
+	kubectl config unset users.gke_$${GCP_PROJECT_ID}_$(GCP_ZONE)_$(K8S_NAME) ; \
+	kubectl config delete-context gke_$${GCP_PROJECT_ID}_$(GCP_ZONE)_$(K8S_NAME) ; \
+	kubectl config unset current-context
 
 info: kubectl connect ## Show K8S cluster info
 	@kubectl cluster-info
