@@ -109,7 +109,7 @@ config: configuration ## Create gcloud configuration
 	gcloud config set compute/region $(GCP_REGION) && \
 	gcloud config set compute/zone $(GCP_ZONE)
 
-helm_service_account: kubectl helm
+helm_service_account: kubectl helm connect
 	@(kubectl get serviceaccount helm -n kube-system || kubectl create -f helm-service-account.yml) && \
 	helm init --service-account helm --wait
 
@@ -117,10 +117,10 @@ k8s:: dns uaa-ip kcf-ip resolve-uaa-kcf ## Set up a new K8S cluster
 k8s:: create enable-swap-accounting connect
 k8s:: helm_service_account
 
-desc: kubectl ## Describe any K8S resource
+desc: kubectl connect ## Describe any K8S resource
 	@kubectl describe $(subst desc,,$(MAKECMDGOALS))
 
-events: kubectl ## Show all K8S events
+events: kubectl connect ## Show all K8S events
 	@kubectl get events
 
 ls: gcloud ## Show all K8S clusters
@@ -150,7 +150,7 @@ enable-swap-accounting: gcloud
 	    "grep swapaccount=1 /proc/cmdline || (sudo sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT=\"console=ttyS0 net.ifnames=0\"/GRUB_CMDLINE_LINUX_DEFAULT=\"console=ttyS0 net.ifnames=0 swapaccount=1\"/g' /etc/default/grub.d/50-cloudimg-settings.cfg && sudo update-grub && sudo shutdown -r 1)" ;\
 	done
 
-contexts: kubectl ## Show all contexts
+contexts: kubectl connect ## Show all contexts
 	@kubectl config get-contexts
 
 connect: gcloud ## Configure kubectl command line access
@@ -159,19 +159,19 @@ connect: gcloud ## Configure kubectl command line access
 d-e-l-e-t-e: gcloud ## Delete an existing K8S cluster
 	@gcloud container clusters delete $(K8S_NAME)
 
-info: kubectl ## Show K8S cluster info
+info: kubectl connect ## Show K8S cluster info
 	@kubectl cluster-info
 
-nodes: kubectl ## Show all K8S nodes
+nodes: kubectl connect ## Show all K8S nodes
 	@kubectl get --output=wide nodes
 
-pods: kubectl ## Show all K8S pods
+pods: kubectl connect ## Show all K8S pods
 	@kubectl get --output=wide pods
 
-services: kubectl ## Show all K8S services
+services: kubectl connect ## Show all K8S services
 	@kubectl get --output=wide --all-namespaces services
 
-secrets: kubectl ## Show all K8S secrets
+secrets: kubectl connect ## Show all K8S secrets
 	@kubectl describe --all-namespaces secrets
 
 dashboard: ## Open K8S Dashboard
@@ -207,7 +207,7 @@ scf-config-values.yml:
 	@echo "$$SCF_CONFIG" > scf-config-values.yml
 .PHONY: scf-config-values.yml
 
-delete-uaa: kubectl helm
+delete-uaa: kubectl helm connect
 	@kubectl delete namespace uaa-opensuse && \
 	helm delete --purge uaa
 
@@ -221,7 +221,7 @@ uaa: scf-release scf-config-values.yml k8s helm
 	--name uaa \
 	--wait)
 
-uaa-ca-cert-secret:
+uaa-ca-cert-secret: kubectl connect
 	$(eval UAA_CA_CERT_SECRET = $(shell kubectl get pods --namespace uaa-opensuse -o jsonpath='{.items[*].spec.containers[?(.name=="uaa")].env[?(.name=="INTERNAL_CA_CERT")].valueFrom.secretKeyRef.name}'))
 
 kcf: uaa uaa-ca-cert-secret ## Deploy Cloud Foundry
@@ -246,7 +246,7 @@ upgrade-kcf: uaa-ca-cert-secret scf-release scf-config-values.yml ## Upgrade Clo
 login-kcf: cf ## Login to CF as admin
 	@cf login -a https://api.$(SCF_DOMAIN) -u admin -p $(SCF_ADMIN_PASS) --skip-ssl-validation
 
-delete-kcf: kubectl helm
+delete-kcf: kubectl helm connect
 	@kubectl delete namespace scf && \
 	helm delete --purge scf
 
@@ -261,12 +261,12 @@ verify: scf-release ## Verify if K8S is ready for SCF
 	@cd scf-release && \
 	./kube-ready-state-check.sh kube
 
-logs: kubectl ## Tail pod logs
+logs: kubectl connect ## Tail pod logs
 	@select NAMESPACE in $$(kubectl get namespaces -o=name | awk -F/ '{ print $$2 }'); do break; done && \
 	select POD in $$(kubectl get pods -o=name -n $$NAMESPACE | awk -F/ '{ print $$2 }'); do break; done && \
 	kubectl logs $$POD -n $$NAMESPACE -f
 
-watch: kubectl ## Watch a K8S namespace
+watch: kubectl connect ## Watch a K8S namespace
 	@select NAMESPACE in $$(kubectl get namespaces -o=name | awk -F/ '{ print $$2 }'); do break; done && \
 	watch kubectl get all -n $$NAMESPACE
 
