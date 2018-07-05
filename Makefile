@@ -113,7 +113,7 @@ helm_service_account: kubectl helm
 	@(kubectl get serviceaccount helm -n kube-system || kubectl create -f helm-service-account.yml) && \
 	helm init --service-account helm --wait
 
-k8s:: dns uaa-ip kcf-ip ## Set up a new K8S cluster
+k8s:: dns uaa-ip kcf-ip resolve-uaa-kcf ## Set up a new K8S cluster
 k8s:: create enable-swap-accounting connect
 k8s:: helm_service_account
 
@@ -211,8 +211,8 @@ delete-uaa: kubectl helm
 	@kubectl delete namespace uaa-opensuse && \
 	helm delete --purge uaa
 
-uaa: scf-release scf-config-values.yml k8s resolve-uaa-kcf helm
-	@(helm ls --deployed | grep uaa-opensuse) || \
+uaa: scf-release scf-config-values.yml k8s helm
+	@(helm list --deployed | grep uaa-opensuse) || \
 	(cd scf-release && \
 	echo "Deploying UAA..." && \
 	helm install helm/uaa-opensuse \
