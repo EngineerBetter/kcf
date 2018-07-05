@@ -46,6 +46,7 @@ GIT_SUBMODULES_JOBS ?= 12
 FISSILE_STEMCELL ?= splatform/fissile-stemcell-opensuse:42.3-6.g1785bff-30.31
 
 DOCKER_ORG ?= engineerbetter
+DOCKER := /usr/local/bin/docker
 
 ### TARGETS ###
 #
@@ -68,6 +69,8 @@ helm: /usr/local/bin/helm
 	@brew install cloudfoundry/tap/cf-cli
 cf: /usr/local/bin/cf
 
+$(DOCKER):
+	@brew install docker
 
 scf:
 	@git clone https://github.com/SUSE/scf.git --recurse-submodules --jobs $(GIT_SUBMODULES_JOBS)
@@ -334,8 +337,8 @@ bin/bosh: /usr/local/bin/wget
 dev-release: bin/bosh
 	@cd bosh-simple && $(CURDIR)/bin/bosh create-release --force
 
-stemcell:
-	@docker pull $(FISSILE_STEMCELL)
+stemcell: $(DOCKER)
+	@$(DOCKER) pull $(FISSILE_STEMCELL)
 
 define FISSILE_OPTS
 --release bosh-simple \
@@ -349,15 +352,15 @@ endef
 packages: dev-release bin/fissile stemcell
 	@$(CURDIR)/bin/fissile build packages $(FISSILE_OPTS) --stemcell "$(FISSILE_STEMCELL)"
 
-clean-images:
+clean-images: $(DOCKER)
 	@rm -fr $(CURDIR)/tmp/{dockerfiles,compilation} && \
-	docker images | awk '/^$(DOCKER_ORG)\/fissile/ || /^fissile/ { system("docker rmi " $$1":"$$2) }'
+	$(DOCKER) images | awk '/^$(DOCKER_ORG)\/fissile/ || /^fissile/ { system("$(DOCKER) rmi " $$1":"$$2) }'
 
-images: bin/fissile clean-images packages
+images: bin/fissile clean-images packages $(DOCKER)
 	@$(CURDIR)/bin/fissile build images $(FISSILE_OPTS) --stemcell "$(FISSILE_STEMCELL)" && \
 	for image in $$($(CURDIR)/bin/fissile show image $(FISSILE_OPTS)); \
 	do \
-	  docker push $$image; \
+	  $(DOCKER) push $$image; \
 	done
 
 deployment: bin/fissile
