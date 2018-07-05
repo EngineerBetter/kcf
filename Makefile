@@ -207,14 +207,15 @@ delete-uaa: kubectl helm
 	@kubectl delete namespace uaa-opensuse && \
 	helm delete --purge uaa
 
-uaa: scf-release scf-config-values.yml k8s ## Deploy UAA
-	@cd scf-release && \
+uaa: scf-release scf-config-values.yml k8s resolve-uaa-kcf helm
+	@(helm ls --deployed | grep uaa-opensuse) || \
+	(cd scf-release && \
 	echo "Deploying UAA..." && \
 	helm install helm/uaa-opensuse \
 	--namespace uaa-opensuse \
 	--values ../scf-config-values.yml \
 	--name uaa \
-	--wait
+	--wait)
 
 uaa-ca-cert-secret:
 	$(eval UAA_CA_CERT_SECRET = $(shell kubectl get pods --namespace uaa-opensuse -o jsonpath='{.items[*].spec.containers[?(.name=="uaa")].env[?(.name=="INTERNAL_CA_CERT")].valueFrom.secretKeyRef.name}'))
