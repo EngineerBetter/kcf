@@ -1,0 +1,152 @@
+---
+# The spacebears_db_node role contains the following jobs:
+#
+# spacebears
+
+{{- if gt (int .Values.sizing.spacebears_db_node.count) 1 }}
+_maxReplicas: {{ fail "spacebears_db_node cannot have more than 1 instances" }}
+{{- end }}
+
+{{- if lt (int .Values.sizing.spacebears_db_node.count) 1 }}
+_minReplicas: {{ fail "spacebears_db_node must have at least 1 instances" }}
+{{- end }}
+
+{{- if .Values.sizing.HA }}
+_moved_sizing_HA: {{ fail "Bad use of moved variable sizing.HA. The new name to use is config.HA" }}
+{{- end }}
+
+{{- if .Values.sizing.cpu }}
+_moved_sizing_cpu_limits: {{ if .Values.sizing.cpu.limits }} {{ fail "Bad use of moved variable sizing.cpu.limits. The new name to use is config.cpu.limits" }} {{else}} ok {{end}}
+{{- end }}
+
+{{- if .Values.sizing.cpu }}
+_moved_sizing_cpu_requests: {{ if .Values.sizing.cpu.requests }} {{ fail "Bad use of moved variable sizing.cpu.requests. The new name to use is config.cpu.requests" }} {{else}} ok {{end}}
+{{- end }}
+
+{{- if .Values.sizing.memory }}
+_moved_sizing_memory_limits: {{ if .Values.sizing.memory.limits }} {{ fail "Bad use of moved variable sizing.memory.limits. The new name to use is config.memory.limits" }} {{else}} ok {{end}}
+{{- end }}
+
+{{- if .Values.sizing.memory }}
+_moved_sizing_memory_requests: {{ if .Values.sizing.memory.requests }} {{ fail "Bad use of moved variable sizing.memory.requests. The new name to use is config.memory.requests" }} {{else}} ok {{end}}
+{{- end }}
+
+apiVersion: "apps/v1beta1"
+kind: "StatefulSet"
+metadata:
+  name: "spacebears_db_node"
+  labels:
+    skiff-role-name: "spacebears_db_node"
+spec:
+  podManagementPolicy: "Parallel"
+  replicas: {{ .Values.sizing.spacebears_db_node.count }}
+  serviceName: "spacebears_db_node-set"
+  template:
+    metadata:
+      name: "spacebears_db_node"
+      labels:
+        skiff-role-name: "spacebears_db_node"
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/secrets.yaml") . | sha256sum }}
+    spec:
+      containers:
+      - env:
+        - name: "KUBERNETES_CLUSTER_DOMAIN"
+          value: {{if ne (typeOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) "<nil>"}}{{if has (kindOf .Values.env.KUBERNETES_CLUSTER_DOMAIN) (list "map" "slice")}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | toJson | quote}}{{else}}{{.Values.env.KUBERNETES_CLUSTER_DOMAIN | quote}}{{end}}{{else}}""{{end}}
+        - name: "KUBERNETES_NAMESPACE"
+          valueFrom:
+            fieldRef:
+              fieldPath: "metadata.namespace"
+        - name: "SPACEBEARS_PASSWORD"
+          valueFrom:
+            secretKeyRef:
+              key: "spacebears-password"
+              name: "secrets"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/fissile-spacebears_db_node:d90d6cafced59f07b9ba0542d8ba1f0df7ad1372"
+        lifecycle:
+          preStop:
+            exec:
+              command:
+              - "/opt/fissile/pre-stop.sh"
+        livenessProbe: ~
+        name: "spacebears_db_node"
+        ports:
+        - containerPort: 9000
+          name: "spacebears"
+          protocol: "TCP"
+        readinessProbe:
+          exec:
+            command:
+            - "/opt/fissile/readiness-probe.sh"
+        resources:
+          requests:
+            {{- if and .Values.config.memory.requests .Values.sizing.spacebears_db_node.memory.request }}
+            memory: "{{ int .Values.sizing.spacebears_db_node.memory.request }}Mi"
+            {{- end }}
+
+            {{- if and .Values.config.cpu.requests .Values.sizing.spacebears_db_node.cpu.request }}
+            cpu: "{{ int .Values.sizing.spacebears_db_node.cpu.request }}m"
+            {{- end }}
+
+          limits:
+            {{- if and .Values.config.memory.limits .Values.sizing.spacebears_db_node.memory.limit }}
+            memory: "{{ int .Values.sizing.spacebears_db_node.memory.limit }}Mi"
+            {{- end }}
+
+            {{- if and .Values.config.cpu.limits .Values.sizing.spacebears_db_node.cpu.limit }}
+            cpu: "{{ int .Values.sizing.spacebears_db_node.cpu.limit }}m"
+            {{- end }}
+
+        securityContext:
+          {{- if has "ALL" .Values.sizing.spacebears_db_node.capabilities }}
+          privileged: true
+          {{- end }}
+
+          {{- if not (has "ALL" .Values.sizing.spacebears_db_node.capabilities) }}
+          capabilities:
+            add:
+            {{- range .Values.sizing.spacebears_db_node.capabilities }}
+            - {{ . | upper }}
+            {{- end }}
+          {{- end }}
+
+        volumeMounts: ~
+      dnsPolicy: "ClusterFirst"
+      imagePullSecrets:
+      - name: "registry-credentials"
+      restartPolicy: "Always"
+      terminationGracePeriodSeconds: 600
+      volumes: ~
+  {{- if or (gt (int .Capabilities.KubeVersion.Major) 1) (and (eq (int .Capabilities.KubeVersion.Major) 1) (ge (.Capabilities.KubeVersion.Minor | trimSuffix "+" | int) 7)) }}
+  updateStrategy:
+    type: "RollingUpdate"
+  {{- end }}
+---
+apiVersion: "v1"
+items:
+- apiVersion: "v1"
+  kind: "Service"
+  metadata:
+    name: "spacebears_db_node-set"
+  spec:
+    clusterIP: "None"
+    ports:
+    - name: "spacebears"
+      port: 9000
+      protocol: "TCP"
+      targetPort: 0
+    selector:
+      skiff-role-name: "spacebears_db_node"
+- apiVersion: "v1"
+  kind: "Service"
+  metadata:
+    name: "spacebears_db_node"
+  spec:
+    ports:
+    - name: "spacebears"
+      port: 9000
+      protocol: "TCP"
+      targetPort: "spacebears"
+    selector:
+      skiff-role-name: "spacebears_db_node"
+kind: "List"

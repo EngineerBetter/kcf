@@ -1,0 +1,74 @@
+---
+kube:
+  external_ips: []
+
+  # Increment this counter to rotate all generated secrets
+  secrets_generation_counter: 1
+
+  storage_class:
+    persistent: "persistent"
+    shared: "shared"
+
+  # Whether HostPath volume mounts are available
+  hostpath_available: false
+
+  auth: ~
+  registry:
+    hostname: "docker.io"
+    username: ""
+    password: ""
+  organization: ""
+config:
+  # Flag to activate high-availability mode
+  HA: false
+
+  # Global memory configuration
+  memory:
+    # Flag to activate memory requests
+    requests: false
+
+    # Flag to activate memory limits
+    limits: false
+
+  # Global CPU configuration
+  cpu:
+    # Flag to activate cpu requests
+    requests: false
+
+    # Flag to activate cpu limits
+    limits: false
+
+services:
+  loadbalanced: false
+secrets:
+  # Password for Spacebears
+  SPACEBEARS_PASSWORD: ~
+env:
+  KUBERNETES_CLUSTER_DOMAIN: ~
+
+# The sizing section contains configuration to change each individual role. Due
+# to limitations on the allowable names, any dashes ("-") in the role names are
+# replaced with underscores ("_").
+sizing:
+  # The spacebears_db_node role contains the following jobs:
+  #
+  # spacebears
+  spacebears_db_node:
+    # Node affinity rules can be specified here
+    affinity: {}
+
+    # Additional privileges can be specified here
+    capabilities: []
+
+    # The spacebears_db_node role cannot be scaled.
+    count: 1
+
+    # Unit [millicore]
+    cpu:
+      request: 1000
+      limit: ~
+
+    # Unit [MiB]
+    memory:
+      request: 256
+      limit: ~
