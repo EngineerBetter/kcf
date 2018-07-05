@@ -1,6 +1,8 @@
 SHELL := bash# we want bash behaviour in all shell invocations
 
 RED := $(shell tput setaf 1)
+GREEN := $(shell tput setaf 2)
+YELLOW := $(shell tput setaf 3)
 BOLD := $(shell tput bold)
 NORMAL := $(shell tput sgr0)
 
@@ -218,7 +220,7 @@ delete-uaa: kubectl helm connect
 uaa: scf-release scf-config-values.yml k8s helm
 	@(helm list --deployed | grep uaa-opensuse) || \
 	(cd scf-release && \
-	echo "Deploying UAA..." && \
+	echo -e "\n$(BOLD)$(YELLOW)Deploying UAA...$(NORMAL)\n" && \
 	helm install helm/uaa-opensuse \
 	--namespace uaa-opensuse \
 	--values ../scf-config-values.yml \
@@ -231,7 +233,7 @@ uaa-ca-cert-secret: kubectl connect
 kcf: uaa uaa-ca-cert-secret ## Deploy Cloud Foundry
 	@(helm list --deployed | grep scf) || \
 	(cd scf-release && \
-	echo "Deploying KCF..." && \
+	echo -e "\n$(BOLD)$(YELLOW)Deploying CloudFoundry...$(NORMAL)\n" && \
 	IFS= helm install helm/cf-opensuse \
 	--namespace scf \
 	--values ../scf-config-values.yml \
@@ -370,8 +372,8 @@ chart: bosh-simple/helm
 simple: bosh-simple/helm helm
 	@(helm list --deployed | grep simple) || \
 	(cd bosh-simple && \
-	echo "Deploying a simple BOSH release..." && \
-	time helm install ./helm \
+	echo -e "\n$(BOLD)$(YELLOW)Deploying a simple BOSH release...$(NORMAL)\n" && \
+	helm install ./helm \
 	--namespace simple \
 	--name simple \
 	--wait)
