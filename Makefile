@@ -102,7 +102,7 @@ regions: gcloud ## Show all regions
 	@gcloud compute regions list
 quotas: regions ## Show GCP quotas
 
-config: configuration
+config: configuration ## Create gcloud configuration
 	@gcloud config configurations activate $(GCP_PROJECT) && \
 	gcloud config set account $$GCP_ACCOUNT && \
 	gcloud config set project $$GCP_PROJECT_ID && \
