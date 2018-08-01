@@ -354,7 +354,7 @@ packages: dev-release bin/fissile stemcell
 
 clean-images: $(DOCKER)
 	@rm -fr $(CURDIR)/tmp/{dockerfiles,compilation} && \
-	$(DOCKER) images | awk '/^$(DOCKER_ORG)\/fissile/ || /^fissile/ { system("$(DOCKER) rmi " $$1":"$$2) }'
+	$(DOCKER) images | awk '/^$(DOCKER_ORG)\/fissile/ || /^fissile/ { system("$(DOCKER) rmi -f " $$1":"$$2) }'
 
 images: bin/fissile clean-images packages $(DOCKER)
 	@$(CURDIR)/bin/fissile build images $(FISSILE_OPTS) --stemcell "$(FISSILE_STEMCELL)" && \
