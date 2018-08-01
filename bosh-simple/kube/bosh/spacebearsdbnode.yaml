@@ -29,7 +29,7 @@ spec:
             secretKeyRef:
               key: "spacebears-password"
               name: "secrets"
-        image: "gerhard/fissile-spacebearsdbnode:d8549ea90cf8d276b6f43b780fa0c2e21206aa89"
+        image: "engineerbetter/fissile-spacebearsdbnode:6b4b6d3cfe06f8152cf57e1d717585daf34278a9"
         lifecycle:
           preStop:
             exec:

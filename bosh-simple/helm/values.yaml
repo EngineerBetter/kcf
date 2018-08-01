@@ -17,7 +17,7 @@ kube:
     hostname: "docker.io"
     username: ""
     password: ""
-  organization: "gerhard"
+  organization: "engineerbetter"
 config:
   # Flag to activate high-availability mode
   HA: false
