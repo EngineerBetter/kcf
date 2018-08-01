@@ -1,7 +1,10 @@
 ---
 # The spacebearsdbnode role contains the following jobs:
 #
-# spacebears
+# - global-properties: Dummy BOSH job used to host global parameters that are
+#   required to configure SCF
+#
+# Also: spacebears
 
 {{- if gt (int .Values.sizing.spacebearsdbnode.count) 1 }}
 _maxReplicas: {{ fail "spacebearsdbnode cannot have more than 1 instances" }}
@@ -62,7 +65,7 @@ spec:
             secretKeyRef:
               key: "spacebears-password"
               name: "secrets"
-        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/fissile-spacebearsdbnode:d8549ea90cf8d276b6f43b780fa0c2e21206aa89"
+        image: "{{ .Values.kube.registry.hostname }}/{{ .Values.kube.organization }}/fissile-spacebearsdbnode:6b4b6d3cfe06f8152cf57e1d717585daf34278a9"
         lifecycle:
           preStop:
             exec:

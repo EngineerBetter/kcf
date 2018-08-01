@@ -1,6 +1,8 @@
 roles:
 - name: spacebearsdbnode
   jobs:
+  - name: global-properties # needs to be first so images use it for processing monit templates
+    release_name: scf-helper
   - name: spacebears
     release_name: bosh-simple-spacebears
   processes:

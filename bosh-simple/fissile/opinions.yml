@@ -1,3 +1,8 @@
 properties:
   spacebears:
     username: "spacebear"
+  fissile:
+    monit:
+      port: 25923
+      user: foo
+      password: bar

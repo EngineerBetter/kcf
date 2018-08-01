@@ -52,7 +52,10 @@ env:
 sizing:
   # The spacebearsdbnode role contains the following jobs:
   #
-  # spacebears
+  # - global-properties: Dummy BOSH job used to host global parameters that are
+  #   required to configure SCF
+  #
+  # Also: spacebears
   spacebearsdbnode:
     # Node affinity rules can be specified here
     affinity: {}

@@ -335,13 +335,14 @@ bin/bosh: /usr/local/bin/wget
 	chmod +x bosh && touch bosh
 
 dev-release: bin/bosh
-	@cd bosh-simple && $(CURDIR)/bin/bosh create-release --force
+	@cd bosh-simple && $(CURDIR)/bin/bosh create-release --force && \
+	cd ../scf-helper-release && $(CURDIR)/bin/bosh create-release --force
 
 stemcell: $(DOCKER)
 	@$(DOCKER) pull $(FISSILE_STEMCELL)
 
 define FISSILE_OPTS
---release bosh-simple \
+--release bosh-simple,scf-helper-release \
 --role-manifest bosh-simple/fissile/role-manifest.yml \
 --light-opinions bosh-simple/fissile/opinions.yml \
 --dark-opinions bosh-simple/fissile/dark-opinions.yml \

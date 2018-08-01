@@ -1,0 +1,38 @@
+---
+name: patch-properties
+description: Dummy BOSH job used to host parameters that are used in SCF patches for upstream bugs
+
+packages:
+
+properties:
+
+  cf_mysql.mysql.advertise_host:
+    description: "Used to patch mysql's advertising mechanism"
+
+  etcd.bootstrap_node:
+    description: "Used to patch etcd server bootstrap"
+
+  diego.rep.cell_id:
+    description: "Name of the diego cell"
+
+  routing_api.uri:
+    description: "URL where the routing API can be reached internally"
+    default: http://routing-api.service.cf.internal
+
+  routing_api.port:
+    description: "Port on which Routing API is running."
+    default: 3000
+
+  cfdot.bbs.hostname:
+    description: "Hostname of the BBS service."
+    default: "bbs.service.cf.internal"
+  cfdot.bbs.port:
+    description: "Port of the BBS service."
+    default: 8889
+
+  cfdot.locket.hostname:
+    description: "Hostname at which to discover the Locket API server."
+    default: "locket.service.cf.internal"
+  cfdot.locket.port:
+    description: "Port of the Locket API server."
+    default: 8891

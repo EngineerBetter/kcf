@@ -1,0 +1,11 @@
+#!/bin/sh
+
+set -o errexit
+
+. make/include/colors.sh
+
+printf "%b==> Vetting %b\n" "${OK_COLOR}" "${ERROR_COLOR}"
+
+go vet $(go list -f '{{ .ImportPath }}' ./... | sed '\@/vendor/@d')
+
+printf "%b" "${NO_COLOR}"
