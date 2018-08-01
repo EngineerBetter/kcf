@@ -26,3 +26,24 @@ configuration:
     description: Password for Spacebears
     secret: true
     required: true
+  auth:
+    roles:
+      configgin-role:
+      - apiGroups: [""]
+        resources: [pods]
+        verbs: [get, list, patch]
+      - apiGroups: [""]
+        resources: [services]
+        verbs: [get]
+      - apiGroups: [apps]
+        resources: [statefulsets]
+        verbs: [get]
+      secrets-role:
+      - apiGroups: [""]
+        resources: [configmaps, secrets]
+        verbs: [create, get, list, patch, update, delete]
+    accounts:
+      default:
+        roles: [configgin-role]
+      secret-generator:
+        roles: [configgin-role, secrets-role]
