@@ -43,7 +43,7 @@ UAA_ADMIN_CLIENT_SECRET ?= admin
 
 GIT_SUBMODULES_JOBS ?= 12
 
-FISSILE_STEMCELL ?= splatform/fissile-stemcell-opensuse:42.3-6.g1785bff-30.31
+FISSILE_STEMCELL ?= splatform/fissile-stemcell-ubuntu:trusty-8.g7cd786f-3.3
 
 DOCKER_ORG ?= engineerbetter
 DOCKER := /usr/local/bin/docker
