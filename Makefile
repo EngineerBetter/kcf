@@ -367,7 +367,7 @@ images: bin/fissile clean-images packages $(DOCKER)
 deployment: bin/fissile
 	@$(CURDIR)/bin/fissile build kube $(FISSILE_OPTS) --output-dir bosh-simple/kube
 
-chart: deployment
+chart: images deployment
 	@$(CURDIR)/bin/fissile build helm $(FISSILE_OPTS) --output-dir bosh-simple/helm
 
 define SIMPLE_CONFIG=
