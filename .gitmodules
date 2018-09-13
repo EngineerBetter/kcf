@@ -1,0 +1,4 @@
+[submodule "eirini-release"]
+	path = eirini-release
+	url = https://github.com/cloudfoundry-incubator/eirini-release.git
+	branch = eirini-scf

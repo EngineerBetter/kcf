@@ -72,14 +72,6 @@ cf: /usr/local/bin/cf
 $(DOCKER):
 	@brew install docker
 
-scf:
-	@git clone https://github.com/SUSE/scf.git --recurse-submodules --jobs $(GIT_SUBMODULES_JOBS)
-update_scf: scf
-	@cd scf && \
-	git pull && \
-	git submodule update --recursive --force --jobs $(GIT_SUBMODULES_JOBS) && \
-	git submodule foreach --recursive 'git checkout . && git clean -fdx'
-
 help:
 	@grep -E '^[0-9a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN { FS = "[:#]" } ; { printf "\033[36m%-20s\033[0m %s\n", $$1, $$4 }' | sort
 
@@ -186,21 +178,18 @@ secrets: kubectl connect ## Show all K8S secrets
 dashboard: ## Open K8S Dashboard
 	@open https://console.cloud.google.com/kubernetes/workload
 
-scf-release-$(SCF_RELEASE_VERSION):
-	@wget --continue --show-progress --output-document /tmp/scf-release-$(SCF_RELEASE_VERSION).zip $(SCF_RELEASE_URL) && \
-	unzip /tmp/scf-release-$(SCF_RELEASE_VERSION).zip -d scf-release-$(SCF_RELEASE_VERSION) && \
-	ln -sf scf-release-$(SCF_RELEASE_VERSION) scf-release
-scf-release: scf-release-$(SCF_RELEASE_VERSION)
-.PHONY: scf-release
-
 define SCF_CONFIG =
 env:
     DOMAIN: $(SCF_DOMAIN)
     UAA_HOST: uaa.$(SCF_DOMAIN)
     UAA_PORT: 2793
+    EIRINI_KUBE_ENDPOINT: "$(shell kubectl get endpoints kubernetes -o jsonpath={.subsets[0].addresses[0].ip})"
+    EIRINI_REGISTRY_ADDRESS: "$(shell kubectl get nodes -o jsonpath={.items[*].status.addresses[?\(@.type==\"ExternalIP\"\)].address}):5800"
+    EIRINI_KUBE_CONFIG: "$(shell kubectl config view --flatten -o json | ruby -ryaml -rjson -e 'puts JSON.generate(YAML.load(ARGF))' | sed 's/\"/\\\"/g')"
 services:
     UAAloadBalancerIP: $(shell gcloud compute addresses describe $(K8S_NAME)-uaa --region=$(GCP_REGION) --format="get(address)")
     KCFloadBalancerIP: $(shell gcloud compute addresses describe $(K8S_NAME)-kcf --region=$(GCP_REGION) --format="get(address)")
+    loadbalanced: true
 kube:
     external_ips: [$(shell kubectl get nodes -o jsonpath={.items[*].status.addresses[?\(@.type==\"ExternalIP\"\)].address})]
     storage_class:
@@ -217,40 +206,40 @@ scf-config-values.yml:
 .PHONY: scf-config-values.yml
 
 delete-uaa: kubectl helm connect
-	@kubectl delete namespace uaa-opensuse && \
+	@kubectl delete namespace uaa && \
 	helm delete --purge uaa
 
-uaa: scf-release scf-config-values.yml k8s helm
-	@(helm list --deployed | grep uaa-opensuse) || \
-	(cd scf-release && \
+uaa: scf-config-values.yml k8s helm
+	@(helm list --deployed | grep uaa) || \
+	(cd eirini-release/scf && \
 	echo -e "\n$(BOLD)$(YELLOW)Deploying UAA...$(NORMAL)\n" && \
-	helm install helm/uaa-opensuse \
-	--namespace uaa-opensuse \
-	--values ../scf-config-values.yml \
+	helm install helm/uaa \
+	--namespace uaa \
+	--values ../../scf-config-values.yml \
 	--name uaa \
 	--wait)
 
 uaa-ca-cert-secret: kubectl connect
-	$(eval UAA_CA_CERT_SECRET = $(shell kubectl get pods --namespace uaa-opensuse -o jsonpath='{.items[*].spec.containers[?(.name=="uaa")].env[?(.name=="INTERNAL_CA_CERT")].valueFrom.secretKeyRef.name}'))
+	$(eval UAA_CA_CERT_SECRET = $(shell kubectl get pods --namespace uaa -o jsonpath='{.items[*].spec.containers[?(.name=="uaa")].env[?(.name=="INTERNAL_CA_CERT")].valueFrom.secretKeyRef.name}'))
 
 kcf: uaa uaa-ca-cert-secret ## Deploy Cloud Foundry
 	@(helm list --deployed | grep scf) || \
-	(cd scf-release && \
+	(cd eirini-release/scf && \
 	echo -e "\n$(BOLD)$(YELLOW)Deploying CloudFoundry...$(NORMAL)\n" && \
-	IFS= helm install helm/cf-opensuse \
+	IFS= helm install helm/cf \
 	--namespace scf \
-	--values ../scf-config-values.yml \
+	--values ../../scf-config-values.yml \
 	--name scf \
-	--set secrets.UAA_CA_CERT="$$(kubectl get secret $(UAA_CA_CERT_SECRET) --namespace uaa-opensuse -o jsonpath="{.data['internal-ca-cert']}" | base64 --decode -)" \
+	--set secrets.UAA_CA_CERT="$$(kubectl get secret $(UAA_CA_CERT_SECRET) --namespace uaa -o jsonpath="{.data['internal-ca-cert']}" | base64 --decode -)" \
 	--timeout 600 \
 	--wait)
 
-upgrade-kcf: uaa-ca-cert-secret scf-release scf-config-values.yml ## Upgrade Cloud Foundry
-	@cd scf-release && \
+upgrade-kcf: uaa-ca-cert-secret scf-config-values.yml ## Upgrade Cloud Foundry
+	@cd eirini-release/scf && \
 	IFS= helm upgrade scf helm/cf-opensuse \
 	--namespace scf \
-	--values ../scf-config-values.yml \
-	--set secrets.UAA_CA_CERT="$$(kubectl get secret $(UAA_CA_CERT_SECRET) --namespace uaa-opensuse -o jsonpath="{.data['internal-ca-cert']}" | base64 --decode -)"
+	--values ../../scf-config-values.yml \
+	--set secrets.UAA_CA_CERT="$$(kubectl get secret $(UAA_CA_CERT_SECRET) --namespace uaa -o jsonpath="{.data['internal-ca-cert']}" | base64 --decode -)"
 
 login-kcf: cf ## Login to CF as admin
 	@cf login -a https://api.$(SCF_DOMAIN) -u admin -p $(SCF_ADMIN_PASS) --skip-ssl-validation
@@ -259,15 +248,15 @@ delete-kcf: kubectl helm connect
 	@kubectl delete namespace scf && \
 	helm delete --purge scf
 
-upgrade-uaa: scf-release scf-config-values.yml ## Upgrade UAA
-	@cd scf-release && \
+upgrade-uaa: scf-config-values.yml ## Upgrade UAA
+	@cd eirini-release/scf && \
 	helm upgrade \
-	--namespace uaa-opensuse \
-	--values ../scf-config-values.yml \
-	uaa helm/uaa-opensuse
+	--namespace uaa \
+	--values ../../scf-config-values.yml \
+	uaa helm/uaa
 
-verify: scf-release ## Verify if K8S is ready for SCF
-	@cd scf-release && \
+verify:  ## Verify if K8S is ready for SCF
+	@cd eirini-release/scf && \
 	./kube-ready-state-check.sh kube
 
 logs: kubectl connect ## Tail pod logs

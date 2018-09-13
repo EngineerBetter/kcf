@@ -1,4 +1,0 @@
-apiVersion: 2.10.1+cf1.15.0.0.g647b2273
-description: A Helm chart for SUSE UAA
-name: uaa-opensuse
-version: 2.10.1
